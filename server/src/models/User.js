@@ -1,37 +1,75 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please add name'],
-    trim: true,
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+    },
+    password: {
+      type: String,
+      // Not required for Google users
+    },
+    googleId: {
+      type: String,
+      sparse: true, // Allows multiple users without googleId
+      unique: true,
+    },
+    role: {
+      type: String,
+      enum: ["user", "recruiter"], // Keep your existing roles
+      default: "user",
+    },
+    skills: {
+      type: [String],
+      default: [],
+    },
+    resumeUrl: {
+      type: String,
+      default: "",
+    },
+    parsedResume: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    avatar: {
+      type: String,
+      default: "",
+    },
+    isGoogleUser: {
+      type: Boolean,
+      default: false,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    verificationCode: {
+      type: String,
+      default: null,
+    },
+    verificationCodeExpires: {
+      type: Date,
+      default: null,
+    },
+    passwordResetToken: {
+      type: String,
+      default: null,
+    },
+    passwordResetExpires: {
+      type: Date,
+      default: null,
+    },
   },
-  email: {
-    type: String,
-    required: [true, 'Please add email'],
-    unique: true,
-    lowercase: true,
+  {
+    timestamps: true,
   },
-  password: {
-    type: String,
-    required: [true, 'Please add password'],
-  },
-  role: {
-    type: String,
-    enum: ['user', 'recruiter'],
-    default: 'user',
-  },
-  skills: [String],
-  resumeUrl: String,
-  parsedData: {
-    experience: String,
-    projects: [String],
-    education: String,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+);
 
-export default mongoose.model('User', userSchema);
+export default mongoose.model("User", userSchema);

@@ -22,6 +22,7 @@ import { CandidateProfile } from "../pages/CandidateProfile";
 
 // Auth Pages
 import { AuthPage } from "../pages/auth/AuthPage";
+import VerifyEmailPage from "../pages/auth/VerifyEmailPage";
 
 export const router = createBrowserRouter([
   {
@@ -65,6 +66,10 @@ export const router = createBrowserRouter([
 
       // Catch all - 404
       { path: "*", element: <Navigate to="/" replace /> },
+      {
+        path: "/verify-email",
+        element: <VerifyEmailPage />,
+      },
     ],
   },
 ]);

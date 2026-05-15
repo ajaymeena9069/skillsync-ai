@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+// import cookieParser from "cookie-parser";
 
 dotenv.config();
 
@@ -12,6 +13,9 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
+
+// we can use this in future when we want to implement cookie-based authentication instead of JWT in headers
+// app.use(cookieParser()); 
 
 // Connect to MongoDB
 connectDB();
