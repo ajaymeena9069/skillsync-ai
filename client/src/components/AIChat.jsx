@@ -1,175 +1,193 @@
-import { useState } from "react";
-import { X, Send, Sparkles, User } from "lucide-react";
-import { Card } from "./Card";
-import { Button } from "./Button";
+import { useState, useRef, useEffect } from 'react';
+import { X, Send, Sparkles, MessageCircle, Minimize2, Upload } from 'lucide-react';
+import { Button } from './Button';
 
 export function AIChat({ isOpen, onClose }) {
-  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([
     {
       id: 1,
-      type: "ai",
-      content: "Hello! I'm your AI career assistant. How can I help you today?",
-      time: "10:00 AM",
-    },
-    {
-      id: 2,
-      type: "user",
-      content: "What skills should I focus on to get a job at Google?",
-      time: "10:01 AM",
-    },
-    {
-      id: 3,
-      type: "ai",
-      content:
-        "Based on your profile and current Google job openings, I recommend focusing on:\n\n1. **System Design** - Many senior roles require strong architecture skills\n2. **Advanced TypeScript** - Google uses TypeScript extensively\n3. **Cloud Technologies** - Particularly GCP and Kubernetes\n\nWould you like me to create a learning roadmap for these skills?",
-      time: "10:01 AM",
-    },
+      type: 'bot',
+      content: 'Hello! I\'m your AI Career Assistant. How can I help you today?',
+      timestamp: new Date()
+    }
   ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const suggestedPrompts = [
+    'Improve my resume',
+    'Find matching jobs',
+    'Analyze skill gap',
+    'Create learning roadmap'
+  ];
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSend = () => {
-    if (!message.trim()) return;
+    if (!inputMessage.trim()) return;
 
-    setMessages([
-      ...messages,
-      {
-        id: messages.length + 1,
-        type: "user",
-        content: message,
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
-    ]);
-    setMessage("");
+    const newMessage = {
+      id: messages.length + 1,
+      type: 'user',
+      content: inputMessage,
+      timestamp: new Date()
+    };
 
+    setMessages([...messages, newMessage]);
+    setInputMessage('');
+    setIsTyping(true);
+
+    // Simulate AI response
     setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          type: "ai",
-          content:
-            "I'm analyzing your request. This is a demo response. In a real application, this would connect to an AI backend.",
-          time: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        },
-      ]);
-    }, 1000);
+      const aiResponse = {
+        id: messages.length + 2,
+        type: 'bot',
+        content: 'I\'m here to help! This is a demo response. In a production environment, I would provide personalized career advice, resume tips, and job matching suggestions based on your profile.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiResponse]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  const handleSuggestedPrompt = (prompt) => {
+    setInputMessage(prompt);
   };
 
   if (!isOpen) return null;
 
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={() => setIsMinimized(false)}
+          className="w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg hover:shadow-xl transition-all flex items-center justify-center group animate-pulse"
+        >
+          <MessageCircle className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-        onClick={onClose}
-      />
-      <div className="fixed right-0 bottom-0 sm:right-4 sm:bottom-4 h-full sm:h-[600px] w-full sm:w-96 bg-card border sm:rounded-2xl shadow-2xl z-50 flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-primary to-secondary text-white sm:rounded-t-2xl">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-semibold">AI Career Assistant</h2>
-              <p className="text-xs text-white/80">Always here to help</p>
-            </div>
-          </div>
+    <div className={`fixed z-50 bg-white rounded-2xl shadow-2xl flex flex-col ${
+      window.innerWidth < 768
+        ? 'inset-0 rounded-none'
+        : 'bottom-6 right-6 w-96 max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-2rem)]'
+    }`}>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-3 rounded-t-2xl flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-white" />
+          <h3 className="text-white font-semibold">AI Career Assistant</h3>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setIsMinimized(true)}
+            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <Minimize2 className="w-5 h-5 text-white" />
+          </button>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-white" />
           </button>
         </div>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((msg) => (
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+        {messages.length === 1 && (
+          <div className="text-center py-8">
+            <Sparkles className="w-12 h-12 text-purple-600 mx-auto mb-3" />
+            <p className="text-gray-600">Ask me anything about your career!</p>
+          </div>
+        )}
+
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
             <div
-              key={msg.id}
-              className={`flex gap-3 ${msg.type === "user" ? "flex-row-reverse" : ""}`}
+              className={`max-w-[80%] px-4 py-2 rounded-2xl ${
+                message.type === 'user'
+                  ? 'bg-purple-600 text-white rounded-br-sm'
+                  : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'
+              }`}
             >
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  msg.type === "ai"
-                    ? "bg-gradient-to-br from-primary to-secondary"
-                    : "bg-accent"
-                }`}
-              >
-                {msg.type === "ai" ? (
-                  <Sparkles className="w-4 h-4 text-white" />
-                ) : (
-                  <User className="w-4 h-4" />
-                )}
-              </div>
-              <div
-                className={`flex-1 max-w-[80%] ${msg.type === "user" ? "flex justify-end" : ""}`}
-              >
-                <Card
-                  className={`p-3 ${
-                    msg.type === "user"
-                      ? "bg-primary text-primary-foreground ml-auto"
-                      : "bg-accent"
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-line">{msg.content}</p>
-                  <p
-                    className={`text-xs mt-2 ${
-                      msg.type === "user"
-                        ? "text-primary-foreground/70"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {msg.time}
-                  </p>
-                </Card>
+              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+            </div>
+          </div>
+        ))}
+
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-bl-sm px-4 py-3">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        )}
 
-        <div className="p-4 border-t border-border">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Ask me anything..."
-              className="flex-1 px-4 py-2.5 bg-accent border border-border rounded-xl
-                focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
-            <Button onClick={handleSend}>
-              <Send className="w-4 h-4" />
-            </Button>
+        {messages.length === 1 && (
+          <div className="space-y-2">
+            <p className="text-xs text-gray-500 text-center">Suggested prompts:</p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {suggestedPrompts.map((prompt, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSuggestedPrompt(prompt)}
+                  className="px-3 py-1.5 bg-white border border-purple-200 text-purple-600 rounded-full text-xs hover:bg-purple-50 transition-colors"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => setMessage("Help me improve my resume")}
-              className="px-3 py-1.5 text-xs bg-accent hover:bg-accent/80 rounded-lg transition-colors"
-            >
-              Resume help
-            </button>
-            <button
-              onClick={() => setMessage("Find me jobs")}
-              className="px-3 py-1.5 text-xs bg-accent hover:bg-accent/80 rounded-lg transition-colors"
-            >
-              Find jobs
-            </button>
-            <button
-              onClick={() => setMessage("Create a roadmap")}
-              className="px-3 py-1.5 text-xs bg-accent hover:bg-accent/80 rounded-lg transition-colors"
-            >
-              Roadmap
-            </button>
-          </div>
-        </div>
+        )}
+
+        <div ref={messagesEndRef} />
       </div>
-    </>
+
+      {/* Quick Actions */}
+      <div className="px-3 py-2 border-t border-gray-200 flex gap-2">
+        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Upload resume">
+          <Upload className="w-4 h-4 text-gray-600" />
+        </button>
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t border-gray-200 p-3 flex gap-2 bg-white rounded-b-2xl">
+        <input
+          type="text"
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+          placeholder="Type your message..."
+          className="flex-1 px-4 py-2 rounded-full border border-gray-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all text-sm"
+        />
+        <button
+          onClick={handleSend}
+          disabled={!inputMessage.trim()}
+          className="w-10 h-10 rounded-full bg-purple-600 text-white flex items-center justify-center hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          <Send className="w-5 h-5" />
+        </button>
+      </div>
+    </div>
   );
 }

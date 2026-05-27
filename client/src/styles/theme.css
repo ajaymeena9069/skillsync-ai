@@ -1,7 +1,10 @@
+/* client/src/styles/theme.css */
 @custom-variant dark (&:is(.dark *));
 
 :root {
   --font-size: 16px;
+
+  /* Light Theme Colors */
   --background: #f9fafb;
   --foreground: #111827;
   --card: #ffffff;
@@ -22,15 +25,10 @@
   --input: transparent;
   --input-background: #f9fafb;
   --switch-background: #d1d5db;
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
   --ring: #4f46e5;
-  --chart-1: #4f46e5;
-  --chart-2: #8b5cf6;
-  --chart-3: #06b6d4;
-  --chart-4: #10b981;
-  --chart-5: #f59e0b;
   --radius: 0.75rem;
+
+  /* Sidebar Colors */
   --sidebar: #ffffff;
   --sidebar-foreground: #374151;
   --sidebar-primary: #4f46e5;
@@ -39,15 +37,29 @@
   --sidebar-accent-foreground: #111827;
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #4f46e5;
+
+  /* Status Colors */
   --success: #10b981;
   --success-foreground: #ffffff;
   --warning: #f59e0b;
   --warning-foreground: #ffffff;
   --info: #06b6d4;
   --info-foreground: #ffffff;
+
+  /* Chart Colors */
+  --chart-1: #4f46e5;
+  --chart-2: #8b5cf6;
+  --chart-3: #06b6d4;
+  --chart-4: #10b981;
+  --chart-5: #f59e0b;
+
+  /* Font Weights */
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
 }
 
 .dark {
+  /* Dark Theme Colors */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.145 0 0);
@@ -67,13 +79,8 @@
   --border: oklch(0.269 0 0);
   --input: oklch(0.269 0 0);
   --ring: oklch(0.439 0 0);
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+
+  /* Sidebar Colors - Dark */
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -82,6 +89,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+
+  /* Chart Colors - Dark */
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
 }
 
 @theme inline {
@@ -106,15 +120,6 @@
   --color-input-background: var(--input-background);
   --color-switch-background: var(--switch-background);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -129,6 +134,16 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 @layer base {
@@ -139,11 +154,6 @@
   body {
     @apply bg-background text-foreground;
   }
-
-  /**
-  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
-  */
 
   html {
     font-size: var(--font-size);
@@ -190,4 +200,111 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+}
+
+/* ==================== FIX AUTOCOMPLETE BACKGROUND ==================== */
+
+/* Remove default browser autocomplete background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Light mode autocomplete fix */
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px var(--input-background) inset !important;
+  -webkit-text-fill-color: var(--foreground) !important;
+  box-shadow: 0 0 0px 1000px var(--input-background) inset !important;
+  background-color: var(--input-background) !important;
+  caret-color: var(--foreground) !important;
+}
+
+/* Dark mode autocomplete fix */
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px #1f2937 inset !important;
+  -webkit-text-fill-color: #f3f4f6 !important;
+  box-shadow: 0 0 0px 1000px #1f2937 inset !important;
+  background-color: #1f2937 !important;
+  caret-color: #f3f4f6 !important;
+  border-color: #374151 !important;
+}
+
+/* Dark mode input base styles */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border-color: #374151 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: var(--primary) !important;
+  outline: none !important;
+  ring-color: var(--primary) !important;
+}
+
+/* Dark mode labels */
+.dark label {
+  color: #e5e7eb !important;
+}
+
+/* Dark mode disabled inputs */
+.dark input:disabled,
+.dark textarea:disabled,
+.dark select:disabled {
+  background-color: #374151 !important;
+  color: #9ca3af !important;
+}
+
+/* Hide autofill icon in dark mode */
+.dark input::-webkit-contacts-auto-fill-button,
+.dark input::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Dark mode background overrides */
+.dark .bg-gray-50,
+.dark .bg-white,
+.dark .bg-gray-100 {
+  background-color: #1f2937 !important;
+}
+
+/* Dark mode border overrides */
+.dark .border-gray-200,
+.dark .border-gray-100 {
+  border-color: #374151 !important;
+}
+
+/* Dark mode text overrides */
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: #f3f4f6 !important;
+}
+
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: #9ca3af !important;
 }

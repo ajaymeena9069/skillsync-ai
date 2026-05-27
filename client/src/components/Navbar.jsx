@@ -1,85 +1,104 @@
-import { useNavigate } from "react-router-dom";
-import {
-  Bell,
-  Search,
-  User,
-  Menu,
-  Briefcase,
-  MessageSquare,
-} from "lucide-react";
-import { Button } from "./Button";
+// client/src/components/Navbar.jsx
+import { useState, useEffect } from "react";
+import { Bell, Menu, Sparkles, Moon, Sun, X } from "lucide-react";
+import { getUser } from "../features/auth/authUtils";
+import { useSelector } from "react-redux";
 
 export function Navbar({
   onMenuClick,
   onNotificationsClick,
-  userType = "jobseeker",
+  darkMode,
+  onDarkModeToggle,
+  isMenuOpen = false,
 }) {
-  const navigate = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+  const user = useSelector((state) => state.auth.user);
 
-  // Get user name from localStorage or use default
-  const userName = localStorage.getItem("userName") || "Alex Johnson";
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Helper function to get avatar URL
+  const getAvatarUrl = () => {
+    if (user?.avatar) {
+      return user.avatar;
+    }
+    return null;
+  };
+
+  const lightGradient =
+    "bg-gradient-to-r from-[#6f31f8] via-[#7c3aed] to-[#8b5cf6]";
+  const lightGradientScrolled =
+    "bg-gradient-to-r from-[#6f31f8]/95 via-[#7c3aed]/95 to-[#8b5cf6]/95";
+  const darkGradient =
+    "bg-gradient-to-r from-[#1e1b4b] via-[#2e1065] to-[#4c1d95]";
+  const darkGradientScrolled =
+    "bg-gradient-to-r from-[#1e1b4b]/95 via-[#2e1065]/95 to-[#4c1d95]/95";
 
   return (
-    <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onMenuClick}
-              className="lg:hidden p-2 rounded-lg hover:bg-accent transition-colors"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <div
-              className="flex items-center gap-2 cursor-pointer"
-              onClick={() => navigate("/app/dashboard")}
-            >
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
-                <Briefcase className="w-5 h-5 text-white" />
+    <>
+      <nav
+        className={`
+          lg:hidden
+          fixed top-0 left-0 right-0 z-50 transition-all duration-300
+          ${
+            scrolled
+              ? `${darkMode ? darkGradientScrolled : lightGradientScrolled} backdrop-blur-xl`
+              : `${darkMode ? darkGradient : lightGradient}`
+          }
+        `}
+      >
+        <div className="px-4">
+          <div className="flex items-center justify-between h-14">
+            {/* Logo */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
-              <span className="text-xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                TalentAI
+              <span className="text-base font-bold text-white">
+                SkillSyncAI
               </span>
             </div>
-          </div>
 
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
-                type="search"
-                placeholder="Search jobs, skills, candidates..."
-                className="w-full pl-10 pr-4 py-2 bg-accent/50 border border-border/50 rounded-xl
-                  focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
-                  transition-all duration-200"
-              />
-            </div>
-          </div>
+            {/* Right Actions */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={onDarkModeToggle}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all"
+              >
+                {darkMode ? (
+                  <Sun className="w-4 h-4 text-yellow-300" />
+                ) : (
+                  <Moon className="w-4 h-4 text-white" />
+                )}
+              </button>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onNotificationsClick}
-              className="relative"
-            >
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <MessageSquare className="w-5 h-5" />
-            </Button>
-            <div className="ml-2 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-accent/50 hover:bg-accent cursor-pointer transition-colors">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
-              <div className="hidden sm:block text-sm">
-                <div className="font-medium">{userName}</div>
-              </div>
+              <button
+                onClick={onNotificationsClick}
+                className="relative p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all"
+              >
+                <Bell className="w-4 h-4 text-white" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+              </button>
+
+              {/* Menu Button (3 bars) */}
+              <button
+                onClick={onMenuClick}
+                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all"
+              >
+                {isMenuOpen ? (
+                  <X className="w-5 h-5 text-white" />
+                ) : (
+                  <Menu className="w-5 h-5 text-white" />
+                )}
+              </button>
             </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+      <div className="h-14 lg:h-0" />
+    </>
   );
 }

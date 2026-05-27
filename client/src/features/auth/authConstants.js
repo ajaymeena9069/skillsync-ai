@@ -1,11 +1,13 @@
+// client/src/features/auth/authConstants.js
 export const AUTH_STORAGE_KEY = "accessToken";
 
 export const USER_ROLES = {
-  USER: "user",
   RECRUITER: "recruiter",
+  JOBSEEKER: "jobseeker",
 };
 
 export const AUTH_STATUS = {
-  AUTHENTICATED: true,
-  UNAUTHENTICATED: false,
+  AUTHENTICATED: "authenticated",
+  UNAUTHENTICATED: "unauthenticated",
+  LOADING: "loading",
 };
