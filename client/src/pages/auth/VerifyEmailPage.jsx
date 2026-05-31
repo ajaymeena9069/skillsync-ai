@@ -18,8 +18,8 @@ import {
 } from "../../services/authApi";
 import { setCredentials } from "../../features/auth/authSlice";
 import {
-  saveAccessToken,
-  saveUser,
+  setToken,
+  setUser,
   getRedirectPath,
 } from "../../features/auth/authUtils";
 
@@ -101,8 +101,8 @@ const VerifyEmailPage = () => {
       }).unwrap();
 
       if (result.token) {
-        saveAccessToken(result.token);
-        saveUser(result.data);
+        setToken(result.token);
+        setUser(result.data);
         dispatch(
           setCredentials({ user: result.data, accessToken: result.token }),
         );
@@ -174,9 +174,9 @@ const VerifyEmailPage = () => {
         </button>
 
         {/* Main Card */}
-        <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
           {/* Header */}
-          <div className="relative px-6 pt-8 pb-6 text-center border-b border-gray-100 dark:border-gray-700/50">
+          <div className="relative px-6 pt-8 pb-6 text-center border-b border-gray-200 dark:border-gray-700/50">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 to-indigo-600" />
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 mb-4 shadow-md">
               <Shield className="w-8 h-8 text-purple-600 dark:text-purple-400" />
@@ -280,7 +280,7 @@ const VerifyEmailPage = () => {
             </form>
 
             {/* Resend Section */}
-            <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700/50">
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700/50">
               <div className="text-center">
                 <button
                   onClick={handleResendCode}

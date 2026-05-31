@@ -1,62 +1,44 @@
 // client/src/features/auth/authUtils.js
-import { AUTH_STORAGE_KEY, USER_ROLES } from "./authConstants";
+import { TOKEN_KEY, USER_KEY, USER_ROLES } from "./authConstants";
 
-const TOKEN_KEY = "accessToken";
-
-export const saveAccessToken = (token) => {
+// Token functions
+export const getToken = () => localStorage.getItem(TOKEN_KEY);
+export const setToken = (token) => {
   if (token) localStorage.setItem(TOKEN_KEY, token);
 };
+export const removeToken = () => localStorage.removeItem(TOKEN_KEY);
 
-export const saveUser = (user) => {
-  if (user) {
-    localStorage.setItem("user", JSON.stringify(user));
-    console.log("💾 User saved:", {
-      id: user.id,
-      role: user.role,
-      companyName: user.company?.name,
-    });
-  }
-};
-
+// User functions
 export const getUser = () => {
   try {
-    const u = localStorage.getItem("user");
-    if (u) {
-      const user = JSON.parse(u);
-      console.log("📖 User loaded:", {
-        id: user.id,
-        role: user.role,
-        companyName: user.company?.name,
-      });
-      return user;
-    }
-    return null;
-  } catch (error) {
-    console.error("Failed to parse user:", error);
+    const user = localStorage.getItem(USER_KEY);
+    return user ? JSON.parse(user) : null;
+  } catch {
     return null;
   }
 };
 
-export const getAccessToken = () => {
-  return localStorage.getItem(TOKEN_KEY);
+export const setUser = (user) => {
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
 };
+export const removeUser = () => localStorage.removeItem(USER_KEY);
 
-export const removeAuthData = () => {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem("user");
-  console.log("🗑️ Auth data cleared");
-};
+// Auth check
+export const isAuthenticated = () => !!getToken() && !!getUser();
 
-export const isAuthenticated = () => {
-  return !!localStorage.getItem(TOKEN_KEY) && !!getUser();
-};
-
+// Role checks
 export const isRecruiter = (user) => user?.role === USER_ROLES.RECRUITER;
-export const isUser = (user) => user?.role === USER_ROLES.USER;
-export const hasRequiredRole = (user, role) => user?.role === role;
+export const isJobSeeker = (user) => user?.role === USER_ROLES.JOBSEEKER;
 
+// Redirect helper
 export const getRedirectPath = (role) => {
   return role === USER_ROLES.RECRUITER
     ? "/app/recruiter-dashboard"
     : "/app/dashboard";
+};
+
+// Clear all auth data
+export const clearAuthData = () => {
+  removeToken();
+  removeUser();
 };

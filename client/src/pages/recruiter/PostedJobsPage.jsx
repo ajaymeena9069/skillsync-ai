@@ -31,12 +31,14 @@ import {
 import { JobFormModal } from "../../components/JobFormModal";
 import { formatSalary, formatEmploymentType } from "../../utils/helpers";
 import { PageLoader } from "../../components/PageLoader";
+import { ConfirmationModal } from "../../components/common/ConfirmationModal";
 
 export function PostedJobsPage() {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [jobToDelete, setJobToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
@@ -44,7 +46,7 @@ export function PostedJobsPage() {
   const itemsPerPage = 6;
 
   const { data: jobsData, isLoading, refetch } = useGetMyJobsQuery();
-  const [deleteJob] = useDeleteJobMutation();
+  const [deleteJob, { isLoading: isDeleting }] = useDeleteJobMutation();
   const [updateJob, { isLoading: isUpdating }] = useUpdateJobMutation();
   const [createJob, { isLoading: isCreating }] = useCreateJobMutation();
 
@@ -67,10 +69,11 @@ export function PostedJobsPage() {
   const activeFilterCount =
     (statusFilter !== "all" ? 1 : 0) + (searchTerm ? 1 : 0);
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this job posting?")) {
-      await deleteJob(id);
+  const handleDeleteConfirm = async () => {
+    if (jobToDelete) {
+      await deleteJob(jobToDelete._id);
       refetch();
+      setJobToDelete(null);
     }
   };
 
@@ -251,7 +254,7 @@ export function PostedJobsPage() {
 
           {/* Filter Panel */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 animate-in fade-in slide-in-from-top duration-200">
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800 animate-in fade-in slide-in-from-top duration-200">
               <div className="flex flex-wrap gap-3">
                 <select
                   value={statusFilter}
@@ -352,7 +355,7 @@ export function PostedJobsPage() {
                 </div>
 
                 {/* Stats & Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-800">
                   <div className="flex items-center gap-4 text-sm">
                     <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                       <Users className="w-4 h-4" /> {job.applicationsCount || 0}{" "}
@@ -378,7 +381,7 @@ export function PostedJobsPage() {
                       <Edit className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                     </button>
                     <button
-                      onClick={() => handleDelete(job._id)}
+                      onClick={() => setJobToDelete(job)}
                       className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                       title="Delete Job"
                     >
@@ -460,6 +463,16 @@ export function PostedJobsPage() {
         isLoading={isUpdating}
         mode="edit"
         initialData={selectedJob}
+      />
+
+      <ConfirmationModal
+        isOpen={!!jobToDelete}
+        onClose={() => setJobToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Job Posting"
+        message={`Are you sure you want to delete "${jobToDelete?.title}"? This action cannot be undone.`}
+        status="rejected"
+        isLoading={isDeleting}
       />
     </div>
   );

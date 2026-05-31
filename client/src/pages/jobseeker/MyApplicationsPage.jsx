@@ -156,7 +156,7 @@ export default function MyApplicationsPage() {
     return (
       <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-100 dark:bg-gray-800/80 dark:border-gray-700/50">
+          <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200 dark:bg-gray-800/80 dark:border-gray-700/50">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 dark:from-purple-900/30 dark:to-indigo-900/30">
               <Briefcase className="w-10 h-10 text-purple-600 dark:text-purple-400" />
             </div>
@@ -283,7 +283,7 @@ export default function MyApplicationsPage() {
 
                         {/* Cover Letter Preview */}
                         {application.coverLetter && (
-                          <div className="mt-4 p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-xl border border-gray-100 dark:from-gray-900/50 dark:to-gray-900/30 dark:border-gray-800">
+                          <div className="mt-4 p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-xl border border-gray-200 dark:from-gray-900/50 dark:to-gray-900/30 dark:border-gray-800">
                             <div className="flex items-center gap-2 mb-2">
                               <FileText className="w-4 h-4 text-purple-500 dark:text-purple-400" />
                               <p className="text-xs font-medium text-gray-600 dark:text-gray-400">

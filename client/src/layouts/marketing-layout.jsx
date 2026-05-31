@@ -2,6 +2,8 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { MarketingNavbar } from "../components/MarketingNavbar";
 import { MarketingFooter } from "../components/MarketingFooter";
+import { AnimatePresence } from "framer-motion";
+import { PageTransition } from "../components/common/PageTransition";
 
 export function MarketingLayout() {
   const navigate = useNavigate();
@@ -24,7 +26,11 @@ export function MarketingLayout() {
         onNavigate={handleNavigate}
         onGetStarted={handleGetStarted}
       />
-      <Outlet />
+      <AnimatePresence mode="wait">
+        <PageTransition key={location.pathname}>
+          <Outlet />
+        </PageTransition>
+      </AnimatePresence>
       <MarketingFooter onNavigate={handleNavigate} />
     </>
   );

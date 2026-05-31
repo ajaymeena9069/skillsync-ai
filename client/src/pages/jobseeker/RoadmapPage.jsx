@@ -1,4 +1,7 @@
 // client/src/pages/RoadmapPage.jsx
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   Calendar,
   CheckCircle2,
@@ -14,123 +17,306 @@ import {
   Rocket,
   Zap,
   Star,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  Upload,
+  Settings,
 } from "lucide-react";
 import { Card } from "../../components/Card";
+import { PageLoader } from "../../components/PageLoader";
 import { Button } from "../../components/Button";
 import { Badge } from "../../components/Badge";
+import { useGenerateRoadmapMutation } from "../../services/roadmapApi";
 
 export function RoadmapPage() {
-  const roadmap = [
-    {
-      week: 1,
-      title: "AWS Fundamentals",
-      status: "completed",
-      tasks: [
-        {
-          title: "Complete AWS Cloud Practitioner course",
-          completed: true,
-          duration: "4h",
-        },
-        {
-          title: "Set up AWS account and explore console",
-          completed: true,
-          duration: "2h",
-        },
-        { title: "Deploy first EC2 instance", completed: true, duration: "3h" },
-        { title: "Practice with S3 buckets", completed: true, duration: "2h" },
-      ],
-      skills: ["AWS", "Cloud Computing", "EC2", "S3"],
-    },
-    {
-      week: 2,
-      title: "Docker Basics",
-      status: "in-progress",
-      tasks: [
-        {
-          title: "Docker fundamentals course",
-          completed: true,
-          duration: "3h",
-        },
-        { title: "Create first Dockerfile", completed: true, duration: "2h" },
-        { title: "Build and run containers", completed: false, duration: "3h" },
-        { title: "Docker Compose tutorial", completed: false, duration: "2h" },
-      ],
-      skills: ["Docker", "Containers", "DevOps"],
-    },
-    {
-      week: 3,
-      title: "Advanced Docker & AWS Integration",
-      status: "upcoming",
-      tasks: [
-        {
-          title: "Deploy Docker containers to AWS ECS",
-          completed: false,
-          duration: "4h",
-        },
-        { title: "Learn Docker networking", completed: false, duration: "3h" },
-        {
-          title: "Container orchestration basics",
-          completed: false,
-          duration: "3h",
-        },
-        { title: "Build CI/CD pipeline", completed: false, duration: "4h" },
-      ],
-      skills: ["AWS ECS", "Docker", "CI/CD"],
-    },
-    {
-      week: 4,
-      title: "GraphQL & API Design",
-      status: "upcoming",
-      tasks: [
-        { title: "GraphQL fundamentals", completed: false, duration: "3h" },
-        { title: "Build GraphQL server", completed: false, duration: "4h" },
-        { title: "Integrate with React", completed: false, duration: "3h" },
-        {
-          title: "Best practices and optimization",
-          completed: false,
-          duration: "2h",
-        },
-      ],
-      skills: ["GraphQL", "API Design", "Apollo"],
-    },
-  ];
+  const navigate = useNavigate();
+  const [weeks, setWeeks] = useState(4);
+  const [hoursPerWeek, setHoursPerWeek] = useState(10);
+  const [showSettings, setShowSettings] = useState(false);
 
-  const totalWeeks = roadmap.length;
-  const completedWeeks = roadmap.filter((w) => w.status === "completed").length;
-  const totalTasks = roadmap.reduce((acc, w) => acc + w.tasks.length, 0);
-  const completedTasks = roadmap.reduce(
-    (acc, w) => acc + w.tasks.filter((t) => t.completed).length,
-    0,
-  );
-  const totalHours = roadmap.reduce(
-    (acc, w) => acc + w.tasks.reduce((sum, t) => sum + parseInt(t.duration), 0),
+  const resumeSkills = useSelector((state) => state.resume.parsedSkills);
+  const hasResume = resumeSkills && resumeSkills.length > 0;
+
+  const [generateRoadmap, { data: roadmapData, isLoading, error }] =
+    useGenerateRoadmapMutation();
+
+  const roadmap = roadmapData?.data;
+  const weeklyPlan = roadmap?.weeks || [];
+  const meta = roadmapData?.meta;
+
+  const totalWeeks = weeklyPlan.length;
+  const totalTasks = weeklyPlan.reduce((acc, w) => acc + (w.tasks?.length || 0), 0);
+  const totalHours = weeklyPlan.reduce(
+    (acc, w) =>
+      acc +
+      (w.tasks || []).reduce((sum, t) => sum + parseInt(t.duration || "0"), 0),
     0,
   );
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "completed":
-        return "success";
-      case "in-progress":
-        return "warning";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "completed":
-        return CheckCircle2;
-      case "in-progress":
-        return Clock;
+  const getTaskTypeIcon = (type) => {
+    switch (type) {
+      case "Course":
+        return BookOpen;
+      case "Project":
+        return Code;
+      case "Practice":
+        return Target;
+      case "Reading":
+        return BookOpen;
       default:
         return Circle;
     }
   };
 
-  const overallProgress = Math.round((completedTasks / totalTasks) * 100);
+  const getTaskTypeBadge = (type) => {
+    switch (type) {
+      case "Course":
+        return "primary";
+      case "Project":
+        return "success";
+      case "Practice":
+        return "warning";
+      case "Reading":
+        return "info";
+      default:
+        return "default";
+    }
+  };
 
+  const handleGenerate = () => {
+    generateRoadmap({ weeks, hoursPerWeek });
+  };
+
+  // No resume uploaded - show upload prompt
+  if (!hasResume) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-sm mb-4 dark:bg-purple-900/30 dark:text-purple-400">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered Learning Path</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3 dark:text-white">
+              Your{" "}
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Learning Roadmap
+              </span>
+            </h1>
+          </div>
+
+          <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-8 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Upload className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Upload Your Resume First
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              We need your resume to identify skill gaps and generate a
+              personalized learning roadmap for you.
+            </p>
+            <Button
+              onClick={() => navigate("/app/resume")}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2 px-6"
+            >
+              <Upload className="w-4 h-4" />
+              Go to Resume Page
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Has resume but hasn't triggered generation yet
+  if (!roadmap && !isLoading && !error) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-sm mb-4 dark:bg-purple-900/30 dark:text-purple-400">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered Learning Path</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3 dark:text-white">
+              Your{" "}
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Learning Roadmap
+              </span>
+            </h1>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto dark:text-gray-400">
+              Generate a personalized learning plan based on your skill gaps and
+              career goals
+            </p>
+          </div>
+
+          <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-8 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Rocket className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Ready to Build Your Roadmap
+            </h2>
+            <p className="text-gray-700 dark:text-gray-300 mb-2 font-medium">
+              We found{" "}
+              <span className="font-semibold text-purple-600 dark:text-purple-400">
+                {resumeSkills.length} skills
+              </span>{" "}
+              from your resume.
+            </p>
+            <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm max-w-sm mx-auto">
+              Our AI will analyze job market demands and create a week-by-week
+              learning plan to fill your skill gaps.
+            </p>
+
+            {showSettings && (
+              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl space-y-4 text-left animate-in fade-in zoom-in duration-200">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Duration (weeks)
+                  </label>
+                  <select
+                    value={weeks}
+                    onChange={(e) => setWeeks(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                  >
+                    <option value={2}>2 weeks</option>
+                    <option value={4}>4 weeks</option>
+                    <option value={6}>6 weeks</option>
+                    <option value={8}>8 weeks</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Hours per week
+                  </label>
+                  <select
+                    value={hoursPerWeek}
+                    onChange={(e) => setHoursPerWeek(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                  >
+                    <option value={5}>5 hours/week</option>
+                    <option value={10}>10 hours/week</option>
+                    <option value={15}>15 hours/week</option>
+                    <option value={20}>20 hours/week</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowSettings(!showSettings)}
+                className="w-full sm:w-auto border-gray-200 dark:border-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                {showSettings ? "Hide settings" : "Customize settings"}
+              </Button>
+              <Button
+                onClick={handleGenerate}
+                className="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2 shadow-md hover:shadow-lg transition-all"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate AI Roadmap
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  // Error state
+  if (error && !roadmap) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-sm mb-4 dark:bg-purple-900/30 dark:text-purple-400">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered Learning Path</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3 dark:text-white">
+              Your{" "}
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Learning Roadmap
+              </span>
+            </h1>
+          </div>
+
+          <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-8 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Generation Failed
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              {error?.data?.message ||
+                "Something went wrong. Please try again."}
+            </p>
+            <Button
+              onClick={handleGenerate}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2 px-6"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty roadmap (user already has all skills)
+  if (roadmap && weeklyPlan.length === 0) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-sm mb-4 dark:bg-purple-900/30 dark:text-purple-400">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered Learning Path</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3 dark:text-white">
+              Your{" "}
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Learning Roadmap
+              </span>
+            </h1>
+          </div>
+
+          <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-8 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Award className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              {roadmap.title || "You're All Caught Up!"}
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              {roadmap.summary ||
+                "Your skills already match the job market demands. Keep building projects to stay sharp!"}
+            </p>
+            <Button
+              onClick={() => navigate("/app/jobs")}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white gap-2 px-6"
+            >
+              Browse Jobs <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Roadmap results
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -147,44 +333,53 @@ export function RoadmapPage() {
             </span>
           </h1>
           <p className="text-gray-500 text-lg max-w-2xl mx-auto dark:text-gray-400">
-            A personalized 30-day plan to master in-demand skills and accelerate
-            your career
+            {roadmap.summary ||
+              "A personalized plan to master in-demand skills and accelerate your career"}
           </p>
+          <Button
+            onClick={handleGenerate}
+            variant="outline"
+            size="sm"
+            className="mt-3 gap-2 border-gray-200 dark:border-gray-700 dark:text-gray-300"
+          >
+            <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+            Regenerate
+          </Button>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="group bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-5 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                <CheckCircle2 className="w-5 h-5 text-white" />
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <Calendar className="w-5 h-5 text-white" />
               </div>
-              <Badge variant="success" className="text-xs">
-                {completedWeeks}/{totalWeeks}
+              <Badge variant="primary" className="text-xs">
+                Plan
               </Badge>
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {completedWeeks}
+              {totalWeeks}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Weeks Completed
+              Weeks Total
             </div>
           </div>
 
           <div className="group bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-5 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                 <Target className="w-5 h-5 text-white" />
               </div>
-              <Badge variant="primary" className="text-xs">
-                {completedTasks}/{totalTasks}
+              <Badge variant="success" className="text-xs">
+                Tasks
               </Badge>
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {completedTasks}
+              {totalTasks}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Tasks Completed
+              Total Tasks
             </div>
           </div>
 
@@ -208,62 +403,48 @@ export function RoadmapPage() {
           <div className="group bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-5 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-3">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                <Calendar className="w-5 h-5 text-white" />
+                <TrendingUp className="w-5 h-5 text-white" />
               </div>
               <Badge variant="info" className="text-xs">
-                {overallProgress}%
+                Skills
               </Badge>
             </div>
             <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              {30 - completedWeeks * 7}
+              {meta?.missingSkillsCount || weeklyPlan.reduce((acc, w) => acc + (w.skills?.length || 0), 0)}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Days Remaining
+              Skills to Learn
             </div>
           </div>
         </div>
 
-        {/* Progress Overview */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-6 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
+        {/* Expected Outcome */}
+        {roadmap.expectedOutcome && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-6 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50">
+            <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               <h3 className="font-semibold text-gray-900 dark:text-white">
-                Overall Progress
+                Expected Outcome
               </h3>
             </div>
-            <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-              {overallProgress}%
-            </span>
+            <p className="text-gray-600 dark:text-gray-400">
+              {roadmap.expectedOutcome}
+            </p>
           </div>
-          <div className="w-full h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 transition-all duration-500"
-              style={{ width: `${overallProgress}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-3 text-xs text-gray-400 dark:text-gray-500">
-            <span>Week 1</span>
-            <span>Week 2</span>
-            <span>Week 3</span>
-            <span>Week 4</span>
-          </div>
-        </div>
+        )}
 
         {/* Timeline */}
         <div className="relative">
-          <div className="absolute left-7 lg:left-9 top-0 bottom-0 w-0.5 rounded-full" />
+          <div className="absolute left-7 lg:left-9 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-600/20 via-indigo-600/20 to-transparent rounded-full" />
 
           <div className="space-y-8">
-            {roadmap.map((week, index) => {
-              const StatusIcon = getStatusIcon(week.status);
-              const completedTasks = week.tasks.filter(
-                (t) => t.completed,
-              ).length;
-              const progressPercentage =
-                (completedTasks / week.tasks.length) * 100;
-              const isCompleted = week.status === "completed";
-              const isInProgress = week.status === "in-progress";
+            {weeklyPlan.map((week) => {
+              const weekTasks = week.tasks || [];
+              const weekHours = weekTasks.reduce(
+                (sum, t) => sum + parseInt(t.duration || "0"),
+                0,
+              );
+              const isFirstWeek = week.week === 1;
 
               return (
                 <div key={week.week} className="relative group">
@@ -274,12 +455,14 @@ export function RoadmapPage() {
                         <div
                           className={`
                           w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-105
-                          ${isCompleted ? "bg-gradient-to-r from-emerald-500 to-teal-600" : ""}
-                          ${isInProgress ? "bg-gradient-to-r from-amber-500 to-orange-600" : ""}
-                          ${!isCompleted && !isInProgress ? "bg-gradient-to-r from-gray-500 to-gray-600" : ""}
+                          ${isFirstWeek ? "bg-gradient-to-r from-purple-600 to-indigo-600" : "bg-gradient-to-r from-gray-500 to-gray-600 dark:from-gray-600 dark:to-gray-700"}
                         `}
                         >
-                          <StatusIcon className="w-7 h-7 text-white" />
+                          {isFirstWeek ? (
+                            <Rocket className="w-7 h-7 text-white" />
+                          ) : (
+                            <Circle className="w-7 h-7 text-white" />
+                          )}
                         </div>
                         <div className="text-left">
                           <div className="text-sm text-gray-400 dark:text-gray-500">
@@ -298,86 +481,84 @@ export function RoadmapPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                           <div className="flex items-center gap-3">
                             <Badge
-                              variant={getStatusColor(week.status)}
+                              variant={isFirstWeek ? "primary" : "default"}
                               className="capitalize"
                             >
-                              {week.status === "in-progress"
-                                ? "In Progress"
-                                : week.status === "completed"
-                                  ? "Completed"
-                                  : "Upcoming"}
+                              {isFirstWeek ? "Start Here" : "Upcoming"}
                             </Badge>
                             <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
                               <Clock className="w-4 h-4" />
-                              <span>
-                                {week.tasks.reduce(
-                                  (sum, t) => sum + parseInt(t.duration),
-                                  0,
-                                )}{" "}
-                                hours total
-                              </span>
+                              <span>{weekHours} hours total</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500 dark:text-gray-400">
-                              Progress
-                            </span>
-                            <span className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                              {Math.round(progressPercentage)}%
-                            </span>
+                          <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                            <Target className="w-4 h-4" />
+                            <span>{weekTasks.length} tasks</span>
                           </div>
                         </div>
 
-                        <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full mb-5">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              isCompleted
-                                ? "bg-emerald-500"
-                                : isInProgress
-                                  ? "bg-amber-500"
-                                  : "bg-gray-400 dark:bg-gray-600"
-                            }`}
-                            style={{ width: `${progressPercentage}%` }}
-                          />
-                        </div>
+                        {/* Description */}
+                        {week.description && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            {week.description}
+                          </p>
+                        )}
 
                         {/* Tasks */}
                         <div className="space-y-2 mb-5">
-                          {week.tasks.map((task, i) => (
-                            <div
-                              key={i}
-                              className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-                                task.completed
-                                  ? "bg-emerald-50/50 dark:bg-emerald-950/30"
-                                  : "bg-gray-50 dark:bg-gray-800/50"
-                              }`}
-                            >
-                              {task.completed ? (
-                                <CheckCircle2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
-                              ) : (
-                                <Circle className="w-5 h-5 text-gray-300 dark:text-gray-600 flex-shrink-0" />
-                              )}
-                              <span
-                                className={`flex-1 text-sm ${
-                                  task.completed
-                                    ? "line-through text-gray-400 dark:text-gray-500"
-                                    : "text-gray-700 dark:text-gray-300"
-                                }`}
+                          {weekTasks.map((task, i) => {
+                            const TaskIcon = getTaskTypeIcon(task.type);
+                            return (
+                              <div
+                                key={i}
+                                className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                               >
-                                {task.title}
-                              </span>
-                              <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                                <Clock className="w-3 h-3" /> {task.duration}
-                              </span>
-                            </div>
-                          ))}
+                                <TaskIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                                <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">
+                                  {task.title}
+                                </span>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <Badge
+                                    variant={getTaskTypeBadge(task.type)}
+                                    className="text-xs"
+                                  >
+                                    {task.type}
+                                  </Badge>
+                                  {task.resource && (
+                                    <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">
+                                      {task.resource}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />{" "}
+                                    {task.duration}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
 
+                        {/* Milestone */}
+                        {week.milestone && (
+                          <div className="flex items-start gap-2 p-3 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30 mb-4">
+                            <Award className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                            <div>
+                              <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                                Milestone:
+                              </span>
+                              <p className="text-sm text-gray-700 dark:text-gray-300">
+                                {week.milestone}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Skills */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-gray-200 dark:border-gray-800">
                           <div className="flex flex-wrap gap-2">
                             <BookOpen className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5" />
-                            {week.skills.map((skill) => (
+                            {(week.skills || []).map((skill) => (
                               <Badge
                                 key={skill}
                                 variant="primary"
@@ -387,21 +568,6 @@ export function RoadmapPage() {
                               </Badge>
                             ))}
                           </div>
-                          {week.status !== "completed" && (
-                            <Button
-                              size="sm"
-                              className={`gap-1 ${
-                                isInProgress
-                                  ? "bg-amber-600 hover:bg-amber-700"
-                                  : "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-                              }`}
-                            >
-                              {isInProgress
-                                ? "Continue Learning"
-                                : "Start Week"}
-                              <ChevronRight className="w-3 h-3" />
-                            </Button>
-                          )}
                         </div>
                       </Card>
                     </div>
@@ -421,22 +587,25 @@ export function RoadmapPage() {
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-start gap-5">
               <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <Award className="w-8 h-8 text-white" />
+                <Zap className="w-8 h-8 text-white" />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
-                  Complete Your Journey
+                  Start Your Journey Today
                   <Sparkles className="w-5 h-5" />
                 </h3>
                 <p className="text-white/90 max-w-md">
-                  Finish all weeks to earn an official certificate and unlock
-                  premium job matches
+                  Follow this roadmap consistently and you'll be ready for your
+                  dream job in {totalWeeks} weeks!
                 </p>
               </div>
             </div>
-            <Button className="bg-white text-purple-600 hover:bg-gray-100 shadow-lg hover:shadow-xl transition-all px-6 gap-2 group">
-              <Rocket className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              View Certificate
+            <Button
+              onClick={() => navigate("/app/skill-gap")}
+              className="bg-white text-purple-600 hover:bg-gray-100 shadow-lg hover:shadow-xl transition-all px-6 gap-2 group"
+            >
+              <Target className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              View Skill Gap
             </Button>
           </div>
         </div>
@@ -453,8 +622,8 @@ export function RoadmapPage() {
                 <span className="font-medium text-gray-900 dark:text-white">
                   Pro Tip:
                 </span>{" "}
-                Consistency is key! Just 1-2 hours daily will help you complete
-                this roadmap in 30 days.
+                Consistency is key! Dedicate {roadmap.hoursPerWeek || hoursPerWeek} hours
+                per week and you'll complete this roadmap right on schedule.
               </p>
             </div>
           </div>

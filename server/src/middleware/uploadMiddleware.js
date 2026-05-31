@@ -1,4 +1,4 @@
-// backend/src/middleware/uploadMiddleware.js - Make sure these exports exist
+// backend/src/middleware/uploadMiddleware.js
 import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
 
@@ -11,7 +11,14 @@ const fileFilter = (req, file, cb) => {
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ],
-    image: ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/svg+xml"],
+    image: [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/svg+xml",
+    ],
   };
 
   let isAllowed = false;
@@ -41,9 +48,15 @@ const upload = multer({
   fileFilter: fileFilter,
 });
 
+// ✅ Export multer middleware
 export const uploadResume = upload.single("resume");
 export const uploadAvatar = upload.single("avatar");
 export const uploadCompanyLogo = upload.single("logo");
+
+// ✅ General upload middleware (for flexibility)
+export const uploadSingle = (fieldName) => upload.single(fieldName);
+export const uploadMultiple = (fieldName, maxCount = 5) =>
+  upload.array(fieldName, maxCount);
 
 // Cloudinary helper functions
 export const uploadToCloudinary = (buffer, options = {}) => {

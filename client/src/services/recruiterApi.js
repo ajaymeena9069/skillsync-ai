@@ -7,6 +7,10 @@ export const recruiterApi = baseApi.injectEndpoints({
       query: () => "/recruiter/dashboard-stats",
       providesTags: ["DashboardStats"],
     }),
+    getAnalytics: builder.query({
+      query: () => "/recruiter/analytics",
+      providesTags: ["Analytics"],
+    }),
     getCandidates: builder.query({
       query: ({ jobId, page = 1, limit = 10, search = "", status = "" }) => ({
         url: `/recruiter/candidates/${jobId}`,
@@ -20,13 +24,28 @@ export const recruiterApi = baseApi.injectEndpoints({
         method: "PUT",
         body: { status },
       }),
-      invalidatesTags: ["DashboardStats", "Candidates"],
+      invalidatesTags: [
+        "DashboardStats", 
+        "Candidates", 
+        "Applications", 
+        "JobApplications", 
+        "Application", 
+        "Analytics"
+      ],
+    }),
+    recordProfileView: builder.mutation({
+      query: (candidateId) => ({
+        url: `/recruiter/candidate/${candidateId}/view`,
+        method: "POST",
+      }),
     }),
   }),
 });
 
 export const {
   useGetDashboardStatsQuery,
+  useGetAnalyticsQuery,
   useGetCandidatesQuery,
   useUpdateApplicationStatusMutation,
+  useRecordProfileViewMutation,
 } = recruiterApi;

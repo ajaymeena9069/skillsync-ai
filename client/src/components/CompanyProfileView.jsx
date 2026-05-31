@@ -13,11 +13,21 @@ import {
   Heart,
   Shield,
   Zap,
+  Loader2,
 } from "lucide-react";
-import { Badge } from "../components/Badge";
+import { Badge } from "./Badge";
+import { OptimizedAvatar } from "./common/OptimizedAvatar";
 
-export function CompanyProfileView({ company, recruiterName }) {
+export function CompanyProfileView({ company, recruiterName, isLoading }) {
   const companyData = company || {};
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <Loader2 className="w-12 h-12 text-purple-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -44,21 +54,19 @@ export function CompanyProfileView({ company, recruiterName }) {
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Company Header Card */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
               <div className="px-6 pt-6 pb-6">
                 <div className="flex flex-col md:flex-row gap-6">
                   {/* Logo */}
                   <div className="flex-shrink-0">
-                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 border-4 border-gray-100 dark:border-gray-700 shadow-lg flex items-center justify-center overflow-hidden">
-                      {companyData.logo ? (
-                        <img
-                          src={companyData.logo}
-                          alt={companyData.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Building2 className="w-12 h-12 text-purple-600 dark:text-purple-400" />
-                      )}
+                    <div className="w-28 h-28 rounded-full shadow-lg">
+                      <OptimizedAvatar 
+                        src={companyData.logo} 
+                        alt={companyData.name} 
+                        fallbackText={companyData.name?.charAt(0)?.toUpperCase()}
+                        className="w-full h-full border-4 border-gray-200 dark:border-gray-700 text-4xl"
+                        size={300}
+                      />
                     </div>
                   </div>
 
@@ -86,8 +94,8 @@ export function CompanyProfileView({ company, recruiterName }) {
             </div>
 
             {/* Contact Information */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   Contact Information
                 </h3>
@@ -104,31 +112,30 @@ export function CompanyProfileView({ company, recruiterName }) {
                   </div>
                   <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                     <Globe className="w-5 h-5 text-gray-400 dark:text-gray-500" />{" "}
-                    {companyData.website || "Not set"}
+                    {companyData.website ? (
+                      <a
+                        href={companyData.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-purple-600"
+                      >
+                        {companyData.website}
+                      </a>
+                    ) : (
+                      "Not set"
+                    )}
                   </div>
                   <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
                     <Building2 className="w-5 h-5 text-gray-400 dark:text-gray-500" />{" "}
                     {companyData.industry || "Not set"}
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                    <MapPin className="w-5 h-5 text-gray-400 dark:text-gray-500" />{" "}
-                    {companyData.location || "Not set"}
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                    <Calendar className="w-5 h-5 text-gray-400 dark:text-gray-500" />{" "}
-                    Founded {companyData.founded || "Not set"}
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                    <Users className="w-5 h-5 text-gray-400 dark:text-gray-500" />{" "}
-                    {companyData.size || "Not set"}
                   </div>
                 </div>
               </div>
             </div>
 
             {/* About Company */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   About the Company
                 </h3>
@@ -165,11 +172,11 @@ export function CompanyProfileView({ company, recruiterName }) {
             </div>
           </div>
 
-          {/* Right Column - Sidebar */}
+          {/* Right Column */}
           <div className="space-y-6">
             {/* Social Links */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   Connect With Us
                 </h3>
@@ -179,22 +186,25 @@ export function CompanyProfileView({ company, recruiterName }) {
                   {
                     platform: "linkedin",
                     icon: Link2,
-                    color: "text-blue-600 dark:text-blue-400",
-                    bg: "bg-blue-50 dark:bg-blue-900/20",
+                    color: "text-blue-600",
+                    bg: "bg-blue-50",
+                    label: "LinkedIn",
                   },
                   {
                     platform: "twitter",
                     icon: Share2,
-                    color: "text-sky-500 dark:text-sky-400",
-                    bg: "bg-sky-50 dark:bg-sky-900/20",
+                    color: "text-sky-500",
+                    bg: "bg-sky-50",
+                    label: "Twitter",
                   },
                   {
                     platform: "github",
                     icon: Code,
-                    color: "text-gray-700 dark:text-gray-300",
-                    bg: "bg-gray-100 dark:bg-gray-800",
+                    color: "text-gray-700",
+                    bg: "bg-gray-100",
+                    label: "GitHub",
                   },
-                ].map(({ platform, icon: Icon, color, bg }) => (
+                ].map(({ platform, icon: Icon, color, bg, label }) => (
                   <div key={platform} className="flex items-center gap-3">
                     <div
                       className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}
@@ -206,9 +216,9 @@ export function CompanyProfileView({ company, recruiterName }) {
                         href={companyData.socialLinks[platform]}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors truncate"
+                        className="text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 transition-colors truncate"
                       >
-                        {companyData.socialLinks[platform]}
+                        {label}
                       </a>
                     ) : (
                       <span className="text-sm text-gray-400 dark:text-gray-500">
@@ -220,9 +230,9 @@ export function CompanyProfileView({ company, recruiterName }) {
               </div>
             </div>
 
-            {/* Benefits & Perks */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            {/* Benefits */}
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   Benefits & Perks
                 </h3>
@@ -234,7 +244,7 @@ export function CompanyProfileView({ company, recruiterName }) {
                       <Badge
                         key={benefit}
                         variant="primary"
-                        className="text-sm px-3 py-1.5 gap-1 dark:bg-purple-900/30 dark:text-purple-300"
+                        className="text-sm px-3 py-1.5 gap-1"
                       >
                         <Zap className="w-3 h-3" /> {benefit}
                       </Badge>
@@ -248,9 +258,9 @@ export function CompanyProfileView({ company, recruiterName }) {
               </div>
             </div>
 
-            {/* Company Culture */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            {/* Culture */}
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   Company Culture
                 </h3>

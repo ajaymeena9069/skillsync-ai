@@ -1,0 +1,30 @@
+feat: comprehensive role-based refactoring and AI-powered feature integration
+
+This commit introduces a major structural refactoring of the platform, cleanly separating job seeker and recruiter logic, alongside the introduction of new AI capabilities, real-time notifications, and polished UI components.
+
+Key Changes:
+
+1. Architectural Refactoring & Role Separation
+   - Deprecated monolithic user routes and controllers in favor of highly specialized jobSeeker, recruiter, and common modules.
+   - Refined protected-route.jsx and router configuration (index.jsx) to enforce strict routing separation between recruiter dashboards and job seeker views.
+
+2. New AI & Skill Gap Analysis Integration
+   - Added aiRoutes, aiController, and robust backend aiService to process resumes and analyze candidate potential.
+   - Introduced the frontend skillGapApi and AIAnalysisModal.jsx to provide actionable insights and dynamic roadmap generation (roadmapService).
+
+3. Real-Time Notifications System
+   - Implemented a complete real-time notification engine with socketHandler.
+   - Added new Notification mongoose model, along with corresponding controllers and frontend notificationApi integration.
+
+4. Expanded Authentication Flows
+   - Integrated full password recovery flows including ForgotPasswordPage.jsx and ResetPasswordPage.jsx.
+   - Enhanced authController to securely handle reset tokens.
+
+5. Testimonials Engine
+   - Built a dynamic Testimonial system with new models, controllers, and APIs to showcase user reviews on the Marketing pages.
+
+6. UI/UX Polish & Component Library Upgrades
+   - Refined MarketingNavbar and LandingPage for dynamic rendering based on active user roles (e.g., hiding job browsing for recruiters).
+   - Replaced legacy loading screens (LoadingPage, LoadingSpinner) with modern PageTransition and Skeleton loaders.
+   - Introduced modular UI components: OptimizedAvatar, ConfirmationModal, FeedbackModal, WelcomeCard, and CandidateActionButtons.
+   - Removed deprecated MobileBottomNav and AIChat components.

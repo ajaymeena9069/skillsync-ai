@@ -9,6 +9,7 @@ import {
   checkApplicationStatus,
 } from "../controllers/applicationController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { authorize } from "../middleware/roleMiddleware.js";
 import { validate } from "../middleware/validate.middleware.js";
 import {
   applyJobSchema,
@@ -21,16 +22,17 @@ const router = express.Router();
 router.get("/check/:jobId", protect, checkApplicationStatus);
 
 // Job seeker routes
-router.post("/apply", protect, validate(applyJobSchema), applyForJob);
-router.get("/my-applications", protect, getMyApplications);
+router.post("/apply", protect, authorize("jobseeker"), validate(applyJobSchema), applyForJob);
+router.get("/my-applications", protect, authorize("jobseeker"), getMyApplications);
 router.get("/:applicationId", protect, getApplicationById);
-router.delete("/:applicationId", protect, withdrawApplication);
+router.delete("/:applicationId", protect, authorize("jobseeker"), withdrawApplication);
 
 // Recruiter routes
-router.get("/job/:jobId", protect, getJobApplications);
+router.get("/job/:jobId", protect, authorize("recruiter"), getJobApplications);
 router.put(
   "/:applicationId/status",
   protect,
+  authorize("recruiter"),
   validate(updateStatusSchema),
   updateApplicationStatus,
 );

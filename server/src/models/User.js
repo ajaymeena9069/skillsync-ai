@@ -62,6 +62,17 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.Mixed,
       default: null,
     },
+    profileViews: {
+      type: Number,
+      default: 0,
+    },
+    profileViewHistory: [
+      {
+        recruiterId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        recruiterName: { type: String },
+        viewedAt: { type: Date, default: Date.now },
+      }
+    ],
 
     // ✅ ADD THESE FIELDS FOR PROFILE PAGE
     preferredJobType: {

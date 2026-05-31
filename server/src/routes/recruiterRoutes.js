@@ -1,6 +1,6 @@
 // backend/src/routes/recruiterRoutes.js
 import express from "express";
-import { getDashboardStats } from "../controllers/recruiterController.js";
+import { getDashboardStats, recordProfileView, getAnalytics } from "../controllers/recruiterController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { authorize } from "../middleware/roleMiddleware.js";
 
@@ -12,6 +12,22 @@ router.get(
   protect,
   authorize("recruiter"),
   getDashboardStats,
+);
+
+// Record profile view route
+router.post(
+  "/candidate/:candidateId/view",
+  protect,
+  authorize("recruiter"),
+  recordProfileView,
+);
+
+// Analytics route
+router.get(
+  "/analytics",
+  protect,
+  authorize("recruiter"),
+  getAnalytics,
 );
 
 // Other routes...

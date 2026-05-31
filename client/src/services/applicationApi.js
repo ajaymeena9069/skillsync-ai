@@ -15,7 +15,15 @@ export const applicationApi = baseApi.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Applications", "Jobs"],
+      invalidatesTags: (result, error, arg) => [
+        "Applications", 
+        "Jobs", 
+        "DashboardStats", 
+        "Analytics", 
+        "PublicStats", 
+        "CompanyStats",
+        { type: "ApplicationStatus", id: arg.jobId }
+      ],
     }),
 
     // Get my applications (job seeker)
@@ -39,7 +47,14 @@ export const applicationApi = baseApi.injectEndpoints({
         method: "PUT",
         body: { status, notes },
       }),
-      invalidatesTags: ["Applications", "JobApplications", "Application"],
+      invalidatesTags: [
+        "Applications", 
+        "JobApplications", 
+        "Application", 
+        "DashboardStats", 
+        "Candidates", 
+        "Analytics"
+      ],
     }),
 
     // Withdraw application (job seeker)
@@ -48,7 +63,15 @@ export const applicationApi = baseApi.injectEndpoints({
         url: `/applications/${applicationId}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Applications", "Jobs"],
+      invalidatesTags: [
+        "Applications", 
+        "Jobs", 
+        "DashboardStats", 
+        "Analytics", 
+        "PublicStats", 
+        "CompanyStats",
+        "ApplicationStatus"
+      ],
     }),
 
     // Check if current user has applied to a specific job

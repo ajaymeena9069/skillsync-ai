@@ -4,6 +4,7 @@ import { X, Send, FileText } from "lucide-react";
 import { Button } from "./Button";
 import { useApplyForJobMutation } from "../services/applicationApi";
 import { toast } from "sonner";
+import { AnimatePresence, motion } from "framer-motion";
 
 export function ApplyModal({ isOpen, onClose, job }) {
   const [applyForJob, { isLoading }] = useApplyForJobMutation();
@@ -34,18 +35,27 @@ export function ApplyModal({ isOpen, onClose, job }) {
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <>
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-        onClick={onClose}
-      />
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            onClick={onClose}
+          />
 
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, x: "-50%", y: "-50%" }}
+            animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
+            exit={{ opacity: 0, scale: 0.95, x: "-50%", y: "-50%" }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-1/2 left-1/2 w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden"
+          >
+            {/* Header */}
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Apply for {job?.title}
@@ -115,7 +125,7 @@ export function ApplyModal({ isOpen, onClose, job }) {
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex gap-3">
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex gap-3">
             <Button
               type="button"
               variant="outline"
@@ -134,7 +144,9 @@ export function ApplyModal({ isOpen, onClose, job }) {
             </Button>
           </div>
         </form>
-      </div>
-    </>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

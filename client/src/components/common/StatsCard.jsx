@@ -12,7 +12,7 @@ export function StatsCard({
   const isPositive = trend === "up";
 
   return (
-    <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/30 dark:border-gray-700/50 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+    <div className="group bg-white/90 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <div className="flex items-center justify-between mb-3">
         <div
           className={`w-12 h-12 rounded-xl bg-gradient-to-r ${color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}

@@ -25,7 +25,7 @@ import { Button } from "./Button";
 import { Badge } from "./Badge";
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { selectCompanyData } from "../features/auth/authSlice";
+import { selectUser } from "../features/auth/authSlice";
 
 export function JobFormModal({
   isOpen,
@@ -35,7 +35,9 @@ export function JobFormModal({
   initialData = null,
   mode = "create",
 }) {
-  const companyData = useSelector(selectCompanyData);
+  // ✅ Directly get user from Redux - company data is already inside user
+  const user = useSelector(selectUser);
+  const companyData = user?.company || {};
 
   const {
     register,
@@ -68,32 +70,23 @@ export function JobFormModal({
     append: appendRequired,
     remove: removeRequired,
     replace: replaceRequired,
-  } = useFieldArray({
-    control,
-    name: "requiredSkills",
-  });
+  } = useFieldArray({ control, name: "requiredSkills" });
 
   const {
     fields: preferredFields,
     append: appendPreferred,
     remove: removePreferred,
     replace: replacePreferred,
-  } = useFieldArray({
-    control,
-    name: "preferredSkills",
-  });
+  } = useFieldArray({ control, name: "preferredSkills" });
 
   const {
     fields: benefitFields,
     append: appendBenefit,
     remove: removeBenefit,
     replace: replaceBenefits,
-  } = useFieldArray({
-    control,
-    name: "benefits",
-  });
+  } = useFieldArray({ control, name: "benefits" });
 
-  // Auto-fill company info from Redux when creating a new job
+  // Auto-fill company info from user object
   useEffect(() => {
     if (isOpen && mode === "create" && companyData) {
       if (companyData.name) setValue("company", companyData.name);
@@ -106,7 +99,7 @@ export function JobFormModal({
     }
   }, [isOpen, mode, companyData, setValue, replaceBenefits]);
 
-  // Load initial data when in edit mode
+  // Load initial data for edit mode
   useEffect(() => {
     if (isOpen && initialData && mode === "edit") {
       setValue("title", initialData.title || "");
@@ -125,13 +118,11 @@ export function JobFormModal({
           initialData.requiredSkills.map((skill) => ({ value: skill })),
         );
       }
-
       if (initialData.preferredSkills?.length) {
         replacePreferred(
           initialData.preferredSkills.map((skill) => ({ value: skill })),
         );
       }
-
       if (initialData.benefits?.length) {
         replaceBenefits(
           initialData.benefits.map((benefit) => ({ value: benefit })),
@@ -148,11 +139,9 @@ export function JobFormModal({
     replaceBenefits,
   ]);
 
-  // Reset form when modal closes
+  // Reset form on close
   useEffect(() => {
-    if (!isOpen) {
-      reset();
-    }
+    if (!isOpen) reset();
   }, [isOpen, reset]);
 
   const onSubmitForm = (data) => {
@@ -229,7 +218,7 @@ export function JobFormModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="relative w-full max-w-4xl max-h-[90vh] bg-white/95 backdrop-blur-md dark:bg-gray-800/95 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300 border border-white/20">
           {/* Header */}
-          <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm dark:bg-gray-800/95 border-b border-gray-100 dark:border-gray-800 px-6 py-5 flex items-center justify-between">
+          <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm dark:bg-gray-800/95 border-b border-gray-200 dark:border-gray-800 px-6 py-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
                 className={`w-11 h-11 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg ${
@@ -268,7 +257,7 @@ export function JobFormModal({
           >
             {/* Section 1: Basic Information */}
             <div className="space-y-5">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
                 <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                   <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 </div>
@@ -366,9 +355,9 @@ export function JobFormModal({
                       {...register("locationType")}
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
                     >
-                      <option value="remote">🌍 Remote</option>
-                      <option value="onsite">🏢 Onsite</option>
-                      <option value="hybrid">🔄 Hybrid</option>
+                      <option value="remote">Remote</option>
+                      <option value="onsite">Onsite</option>
+                      <option value="hybrid">Hybrid</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
@@ -385,11 +374,11 @@ export function JobFormModal({
                       {...register("employmentType")}
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
                     >
-                      <option value="full-time">📋 Full Time</option>
-                      <option value="part-time">⏰ Part Time</option>
-                      <option value="contract">📄 Contract</option>
-                      <option value="internship">🎓 Internship</option>
-                      <option value="freelance">💼 Freelance</option>
+                      <option value="full-time">Full Time</option>
+                      <option value="part-time">Part Time</option>
+                      <option value="contract">Contract</option>
+                      <option value="internship">Internship</option>
+                      <option value="freelance">Freelance</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
@@ -406,12 +395,14 @@ export function JobFormModal({
                       {...register("experienceLevel")}
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
                     >
-                      <option value="entry">🌱 Entry Level</option>
-                      <option value="junior">📘 Junior (1-2 years)</option>
-                      <option value="mid">📚 Mid Level (3-5 years)</option>
-                      <option value="senior">🚀 Senior (5-8 years)</option>
-                      <option value="lead">👑 Lead (8+ years)</option>
-                      <option value="executive">💎 Executive (10+ years)</option>
+                      <option value="entry">Entry Level</option>
+                      <option value="junior">Junior (1-2 years)</option>
+                      <option value="mid">Mid Level (3-5 years)</option>
+                      <option value="senior">Senior (5-8 years)</option>
+                      <option value="lead">Lead (8+ years)</option>
+                      <option value="executive">
+                        Executive (10+ years)
+                      </option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
@@ -436,38 +427,26 @@ export function JobFormModal({
                       </select>
                       <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
                     </div>
-                    <div className="relative">
-                      <input
-                        {...register("salaryMin")}
-                        type="number"
-                        placeholder="Min"
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-center"
-                      />
-                    </div>
-                    <div className="relative">
-                      <input
-                        {...register("salaryMax")}
-                        type="number"
-                        placeholder="Max"
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-center"
-                      />
-                    </div>
+                    <input
+                      {...register("salaryMin")}
+                      type="number"
+                      placeholder="Min"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-center"
+                    />
+                    <input
+                      {...register("salaryMax")}
+                      type="number"
+                      placeholder="Max"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 text-center"
+                    />
                   </div>
-                  {(errors.salaryMin || errors.salaryMax) && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.salaryMin?.message ||
-                        errors.salaryMax?.message ||
-                        "Invalid salary range"}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>
 
             {/* Section 2: Job Description */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
                 <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                   <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 </div>
@@ -503,7 +482,7 @@ export function JobFormModal({
 
             {/* Section 3: Required Skills */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
                 <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                   <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 </div>
@@ -549,7 +528,7 @@ export function JobFormModal({
 
             {/* Section 4: Preferred Skills */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
                 <div className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800">
                   <Sparkles className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                 </div>
@@ -570,7 +549,7 @@ export function JobFormModal({
                 placeholder="AWS, Docker, Kubernetes"
               />
 
-              <div className="flex flex-wrap gap-2 min-h-[40px]">
+              <div className="flex flex-wrap gap-2">
                 {preferredFields.map((field, index) => (
                   <Badge
                     key={field.id}
@@ -592,7 +571,7 @@ export function JobFormModal({
 
             {/* Section 5: Benefits */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-gray-800">
                 <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
                   <Gift className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
@@ -613,7 +592,7 @@ export function JobFormModal({
                 placeholder="Health Insurance, Remote Work, Learning Budget"
               />
 
-              <div className="flex flex-wrap gap-2 min-h-[40px]">
+              <div className="flex flex-wrap gap-2">
                 {benefitFields.map((field, index) => (
                   <Badge
                     key={field.id}
@@ -634,7 +613,7 @@ export function JobFormModal({
             </div>
 
             {/* Actions */}
-            <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm dark:bg-gray-800/95 pt-6 pb-2 border-t border-gray-100 dark:border-gray-800 mt-6">
+            <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm dark:bg-gray-800/95 pt-6 pb-2 border-t border-gray-200 dark:border-gray-800 mt-6">
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   type="button"
@@ -687,22 +666,12 @@ export function JobFormModal({
           background: #6b7280;
         }
         @keyframes fade-in {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         @keyframes zoom-in {
-          from {
-            transform: scale(0.95);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
         .animate-in {
           animation-duration: 0.2s;
@@ -764,7 +733,7 @@ function SkillInput({ onAdd, placeholder }) {
         className="gap-2 w-full sm:w-auto h-11 px-6"
       >
         <Plus className="w-4 h-4" />
-        Add Skill
+        Add
       </Button>
     </div>
   );

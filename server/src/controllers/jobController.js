@@ -1,16 +1,153 @@
+// backend/src/controllers/jobController.js
 import Job from "../models/Job.js";
-import User from "../models/User.js";
-import Resume from "../models/Resume.js";
-import { Types } from "mongoose";
 
+// Get all jobs (with recruiterId populated)
+export const getJobs = async (req, res) => {
+  try {
+    const {
+      search,
+      location,
+      experienceLevel,
+      employmentType,
+      locationType,
+      minSalary,
+      page = 1,
+      limit = 10,
+      sortBy = "newest",
+    } = req.query;
+
+    const query = { status: "active" };
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { company: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { requiredSkills: { $in: [new RegExp(search, "i")] } },
+      ];
+    }
+
+    // Location filter
+    if (location && location !== "All Locations") {
+      query.location = { $regex: location, $options: "i" };
+    }
+
+    // Experience level filter
+    if (experienceLevel) {
+      query.experienceLevel = experienceLevel;
+    }
+
+    // Employment type filter
+    if (employmentType) {
+      const types = Array.isArray(employmentType)
+        ? employmentType
+        : [employmentType];
+      query.employmentType = { $in: types };
+    }
+
+    // Location type filter
+    if (locationType) {
+      query.locationType = locationType;
+    }
+
+    // Minimum salary filter
+    if (minSalary) {
+      query.salaryMin = { $gte: parseInt(minSalary) };
+    }
+
+    // Sorting
+    let sortOptions = {};
+    switch (sortBy) {
+      case "newest":
+        sortOptions = { createdAt: -1 };
+        break;
+      case "oldest":
+        sortOptions = { createdAt: 1 };
+        break;
+      case "salary-high":
+        sortOptions = { salaryMax: -1 };
+        break;
+      case "salary-low":
+        sortOptions = { salaryMin: 1 };
+        break;
+      default:
+        sortOptions = { createdAt: -1 };
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // ✅ IMPORTANT: Populate recruiterId to get company details
+    const jobs = await Job.find(query)
+      .populate("recruiterId", "name email company avatar") // ✅ This populates recruiter data
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    const total = await Job.countDocuments(query);
+
+    res.json({
+      success: true,
+      data: jobs,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalItems: total,
+        itemsPerPage: parseInt(limit),
+      },
+    });
+  } catch (error) {
+    console.error("Get jobs error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get job by ID (with recruiterId populated)
+export const getJobById = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id).populate(
+      "recruiterId",
+      "name email company avatar",
+    ); // ✅ Populate recruiter
+
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
+
+    // Increment view count if the user is not the recruiter who posted the job
+    const isOwner = req.user && req.user._id.toString() === job.recruiterId._id.toString();
+    if (!isOwner) {
+      job.viewsCount = (job.viewsCount || 0) + 1;
+      await job.save();
+    }
+
+    res.json({ success: true, data: job });
+  } catch (error) {
+    console.error("Get job by ID error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Get jobs by recruiter
+export const getJobsByRecruiter = async (req, res) => {
+  try {
+    const jobs = await Job.find({ recruiterId: req.user._id })
+      .populate("recruiterId", "name email company")
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, data: jobs });
+  } catch (error) {
+    console.error("Get jobs by recruiter error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Create job
 export const createJob = async (req, res) => {
   try {
     const jobData = {
       ...req.body,
       recruiterId: req.user._id,
-      requiredSkills: req.body.requiredSkills.map((skill) =>
-        skill.toLowerCase().trim(),
-      ),
     };
 
     const job = await Job.create(jobData);
@@ -18,234 +155,79 @@ export const createJob = async (req, res) => {
     res.status(201).json({
       success: true,
       data: job,
+      message: "Job posted successfully",
     });
   } catch (error) {
     console.error("Create job error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Get all active jobs (for job seekers)
-// @route   GET /api/jobs
-// @access  Public
-export const getJobs = async (req, res) => {
+// Update job
+export const updateJob = async (req, res) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      skills,
-      location,
-      employmentType,
-      experienceLevel,
-      locationType,
-      minSalary,
-      sortBy = "newest",
-    } = req.query;
-
-    const query = { status: "active" };
-
-    // Search in title, company, description
-    if (search) {
-      query.$text = { $search: search };
-    }
-
-    // Filter by required skills
-    if (skills) {
-      const skillArray = skills.split(",").map((s) => s.toLowerCase().trim());
-      query.requiredSkills = { $in: skillArray };
-    }
-
-    // Location filter
-    if (location) {
-      query.location = { $regex: location, $options: "i" };
-    }
-
-    // Employment type
-    if (employmentType) {
-      query.employmentType = employmentType;
-    }
-
-    // Experience level
-    if (experienceLevel) {
-      query.experienceLevel = experienceLevel;
-    }
-
-    // Location type
-    if (locationType) {
-      query.locationType = locationType;
-    }
-
-    // Minimum salary
-    if (minSalary) {
-      query.salaryMin = { $gte: parseInt(minSalary) };
-    }
-
-    // Don't show expired jobs
-    query.$or = [
-      { expiresAt: { $exists: false } },
-      { expiresAt: { $gt: new Date() } },
-    ];
-
-    // Sorting
-    let sortOptions = {};
-    switch (sortBy) {
-      case "newest":
-        sortOptions = { postedAt: -1 };
-        break;
-      case "oldest":
-        sortOptions = { postedAt: 1 };
-        break;
-      case "salary-high":
-        sortOptions = { salaryMax: -1 };
-        break;
-      case "salary-low":
-        sortOptions = { salaryMax: 1 };
-        break;
-      default:
-        sortOptions = { postedAt: -1 };
-    }
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const [jobs, total] = await Promise.all([
-      Job.find(query)
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .populate("recruiterId", "name email company"),
-      Job.countDocuments(query),
-    ]);
-
-    res.json({
-      success: true,
-      data: jobs,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / parseInt(limit)),
-      },
-    });
-  } catch (error) {
-    console.error("Get jobs error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Get single job by ID
-// @route   GET /api/jobs/:id
-// @access  Public
-export const getJobById = async (req, res) => {
-  try {
-    const job = await Job.findById(req.params.id).populate(
-      "recruiterId",
-      "name email company avatar",
+    const job = await Job.findOneAndUpdate(
+      { _id: req.params.id, recruiterId: req.user._id },
+      req.body,
+      { new: true, runValidators: true },
     );
 
     if (!job) {
-      return res.status(404).json({ message: "Job not found" });
+      return res.status(404).json({ success: false, message: "Job not found" });
     }
-
-    // Increment view count
-    await job.updateOne({ $inc: { viewsCount: 1 } });
 
     res.json({
       success: true,
       data: job,
-    });
-  } catch (error) {
-    console.error("Get job error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Get recruiter's jobs
-// @route   GET /api/jobs/recruiter/my-jobs
-// @access  Private (Recruiter)
-export const getMyJobs = async (req, res) => {
-  try {
-    if (req.user.role !== "recruiter") {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
-    const jobs = await Job.find({ recruiterId: req.user._id }).sort({
-      createdAt: -1,
-    });
-
-    res.json({
-      success: true,
-      data: jobs,
-    });
-  } catch (error) {
-    console.error("Get my jobs error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-// @desc    Update job
-// @route   PUT /api/jobs/:id
-// @access  Private (Recruiter who owns the job)
-export const updateJob = async (req, res) => {
-  try {
-    const job = await Job.findById(req.params.id);
-
-    if (!job) {
-      return res.status(404).json({ message: "Job not found" });
-    }
-
-    if (job.recruiterId.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to update this job" });
-    }
-
-    const updatedJob = await Job.findByIdAndUpdate(
-      req.params.id,
-      {
-        ...req.body,
-        requiredSkills: req.body.requiredSkills?.map((s) =>
-          s.toLowerCase().trim(),
-        ),
-      },
-      { new: true, runValidators: true },
-    );
-
-    res.json({
-      success: true,
-      data: updatedJob,
+      message: "Job updated successfully",
     });
   } catch (error) {
     console.error("Update job error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// @desc    Delete job
-// @route   DELETE /api/jobs/:id
-// @access  Private (Recruiter who owns the job)
+// Delete job
 export const deleteJob = async (req, res) => {
   try {
-    const job = await Job.findById(req.params.id);
+    const job = await Job.findOneAndDelete({
+      _id: req.params.id,
+      recruiterId: req.user._id,
+    });
 
     if (!job) {
-      return res.status(404).json({ message: "Job not found" });
+      return res.status(404).json({ success: false, message: "Job not found" });
     }
 
-    if (job.recruiterId.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to delete this job" });
-    }
+    res.json({ success: true, message: "Job deleted successfully" });
+  } catch (error) {
+    console.error("Delete job error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
-    await job.deleteOne();
+// Update job status
+export const updateJobStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const job = await Job.findOneAndUpdate(
+      { _id: req.params.id, recruiterId: req.user._id },
+      { status },
+      { new: true },
+    );
+
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found" });
+    }
 
     res.json({
       success: true,
-      message: "Job deleted successfully",
+      data: job,
+      message: `Job ${status} successfully`,
     });
   } catch (error) {
-    console.error("Delete job error:", error);
-    res.status(500).json({ message: "Server error", error: error.message });
+    console.error("Update job status error:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };

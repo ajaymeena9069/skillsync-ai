@@ -38,6 +38,8 @@ import { useJobMatch } from "../../hooks/useJobMatch";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import { ApplyModal } from "../../components/ApplyModal";
+import { OptimizedAvatar } from "../../components/common/OptimizedAvatar";
+import { BackButton } from "../../components/common/BackButton";
 
 export default function JobDetailsPage() {
   const { jobId } = useParams();
@@ -253,35 +255,27 @@ export default function JobDetailsPage() {
     <div className="min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Back Button */}
-        <button
-          onClick={() => navigate("/app/jobs")}
-          className="group inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-700 transition-all duration-200"
-        >
-          <ArrowLeft className="w-4 h-4 text-gray-500 group-hover:text-purple-500 transition-colors" />
-          <span className="text-sm font-medium text-gray-600 group-hover:text-purple-600 transition-colors dark:text-gray-400">
-            Back to Jobs
-          </span>
-        </button>
+        <div className="mb-6 flex justify-start">
+          <BackButton text="Go Back" fallbackPath="/app/jobs" />
+        </div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Job Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Job Header - Keep as is */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
               <div className="p-6">
                 <div className="flex flex-col md:flex-row gap-5">
                   <div className="flex-shrink-0">
-                    <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 flex items-center justify-center shadow-md overflow-hidden">
-                      {company?.logo ? (
-                        <img
-                          src={company.logo}
-                          alt={job.company}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Building2 className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-                      )}
+                    <div className="w-20 h-20 rounded-full shadow-md">
+                      <OptimizedAvatar
+                        src={company?.logo}
+                        alt={job.company}
+                        fallbackText={job.company?.charAt(0)?.toUpperCase()}
+                        className="w-full h-full border-2 border-gray-200 dark:border-gray-700 text-xl"
+                        size={150}
+                      />
                     </div>
                   </div>
                   <div className="flex-1">
@@ -359,8 +353,8 @@ export default function JobDetailsPage() {
             </div>
 
             {/* Job Description - Keep as is */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-100 dark:border-gray-700/50">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700/50">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <Briefcase className="w-5 h-5 text-purple-600" />
                   Job Description
@@ -375,8 +369,8 @@ export default function JobDetailsPage() {
 
             {/* Required Skills - Keep as is */}
             {job.requiredSkills?.length > 0 && (
-              <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-gray-100 dark:border-gray-700/50">
+              <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700/50">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Zap className="w-5 h-5 text-purple-600" />
                     Required Skills
@@ -391,11 +385,10 @@ export default function JobDetailsPage() {
                       return (
                         <span
                           key={idx}
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium ${
-                            isMatched
-                              ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                              : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                          }`}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium ${isMatched
+                            ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                            : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                            }`}
                         >
                           {skill}
                           {isMatched && (
@@ -421,8 +414,8 @@ export default function JobDetailsPage() {
 
             {/* Benefits - Keep as is */}
             {job.benefits?.length > 0 && (
-              <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-gray-100 dark:border-gray-700/50">
+              <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700/50">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Award className="w-5 h-5 text-purple-600" />
                     Benefits & Perks
@@ -483,8 +476,8 @@ export default function JobDetailsPage() {
             </div>
 
             {/* Job Overview - Keep as is */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50">
                 <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-purple-600" />
                   Job Overview
@@ -531,11 +524,17 @@ export default function JobDetailsPage() {
             </div>
 
             {/* Company Info Card - Keep as is */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  <div className="w-10 h-10 rounded-full">
+                    <OptimizedAvatar
+                      src={company?.logo}
+                      alt={job.company}
+                      fallbackText={job.company?.charAt(0)?.toUpperCase()}
+                      className="w-full h-full"
+                      size={100}
+                    />
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -582,7 +581,7 @@ export default function JobDetailsPage() {
                 )}
 
                 {(company?.mission || company?.vision) && (
-                  <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                     {company?.mission && (
                       <div>
                         <p className="text-xs font-medium text-purple-600 dark:text-purple-400">
@@ -606,7 +605,7 @@ export default function JobDetailsPage() {
                   </div>
                 )}
 
-                <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                   {company?.email && (
                     <div className="flex items-center gap-2 text-sm">
                       <Mail className="w-4 h-4 text-gray-400" />
@@ -640,46 +639,46 @@ export default function JobDetailsPage() {
                 {(company?.socialLinks?.linkedin ||
                   company?.socialLinks?.twitter ||
                   company?.socialLinks?.github) && (
-                  <div className="flex gap-3 pt-2 border-t border-gray-100 dark:border-gray-700">
-                    {company.socialLinks.linkedin && (
-                      <a
-                        href={company.socialLinks.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-purple-600 transition-colors"
-                      >
-                        <span className="text-sm">🔗 LinkedIn</span>
-                      </a>
-                    )}
-                    {company.socialLinks.twitter && (
-                      <a
-                        href={company.socialLinks.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-purple-600 transition-colors"
-                      >
-                        <span className="text-sm">🐦 Twitter</span>
-                      </a>
-                    )}
-                    {company.socialLinks.github && (
-                      <a
-                        href={company.socialLinks.github}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-purple-600 transition-colors"
-                      >
-                        <span className="text-sm">💻 GitHub</span>
-                      </a>
-                    )}
-                  </div>
-                )}
+                    <div className="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                      {company.socialLinks.linkedin && (
+                        <a
+                          href={company.socialLinks.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-500 hover:text-purple-600 transition-colors"
+                        >
+                          <span className="text-sm">🔗 LinkedIn</span>
+                        </a>
+                      )}
+                      {company.socialLinks.twitter && (
+                        <a
+                          href={company.socialLinks.twitter}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-500 hover:text-purple-600 transition-colors"
+                        >
+                          <span className="text-sm">🐦 Twitter</span>
+                        </a>
+                      )}
+                      {company.socialLinks.github && (
+                        <a
+                          href={company.socialLinks.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-500 hover:text-purple-600 transition-colors"
+                        >
+                          <span className="text-sm">💻 GitHub</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
               </div>
             </div>
 
             {/* Culture Card - Keep as is */}
             {company?.culture && (
-              <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-                <div className="p-5 border-b border-gray-100 dark:border-gray-700/50">
+              <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-gray-200 dark:border-gray-700/50">
                   <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Heart className="w-4 h-4 text-purple-600" />
                     Company Culture

@@ -27,6 +27,7 @@ import {
 import { Button } from "../../components/Button";
 import { PageLoader } from "../../components/PageLoader";
 import { StatsCard } from "../../components/common/StatsCard";
+import { BackButton } from "../../components/common/BackButton";
 import {
   useGetJobApplicationsQuery,
   useUpdateApplicationStatusMutation,
@@ -167,15 +168,7 @@ export default function JobApplicationsPage() {
             </p>
 
             <div className="flex justify-center mt-6">
-              <button
-                onClick={() => navigate("/app/jobs-posted")}
-                className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm hover:shadow-md hover:border-purple-200 transition-all duration-200 dark:bg-gray-800/50 dark:border-gray-700 dark:hover:border-purple-700"
-              >
-                <ChevronLeft className="w-4 h-4 text-gray-500 group-hover:text-purple-500 transition-colors dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-600 group-hover:text-purple-600 transition-colors dark:text-gray-400 dark:group-hover:text-purple-400">
-                  Back to Jobs
-                </span>
-              </button>
+              <BackButton text="Back to Jobs" fallbackPath="/app/jobs-posted" />
             </div>
           </div>
         </div>
@@ -333,7 +326,7 @@ export default function JobApplicationsPage() {
                   )}
 
                   {/* Status Update Section */}
-                  <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-800">
                     <div className="flex flex-wrap gap-2">
                       {["reviewed", "shortlisted", "rejected", "hired"].map(
                         (status) => {

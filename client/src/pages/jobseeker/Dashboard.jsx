@@ -1,3 +1,4 @@
+// client/src/pages/Dashboard.jsx
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -9,23 +10,23 @@ import {
   Sparkles,
   Code,
   Eye,
-  Award,
   Target,
   ChevronRight,
 } from "lucide-react";
 import { Button } from "../../components/Button";
-import { MatchBadge } from "../../components/ui/MatchBadge";
 import { ResumeUpload } from "../../components/resume-upload";
 import { useGetResumeQuery } from "../../services/resumeApi";
 import { useGetMyApplicationsQuery } from "../../services/applicationApi";
 import { useGetJobsQuery } from "../../services/jobsApi";
+import { useGetProfileQuery } from "../../services/jobseekerApi";
 import { useSelector } from "react-redux";
 import { PageLoader } from "../../components/PageLoader";
 import { useJobMatch } from "../../hooks/useJobMatch";
-import { PageHeader } from "../../components/common/PageHeader";
 import { StatsCard } from "../../components/common/StatsCard";
 import { ProfileProgress } from "../../components/common/ProfileProgress";
 import { EmptyState } from "../../components/common/EmptyState";
+import { WelcomeCard } from "../../components/common/WelcomeCard";
+import { JobCard } from "../../components/JobCard"; // ✅ Import JobCard component
 
 // Helper function
 const getTimeAgo = (date) => {
@@ -53,18 +54,21 @@ export function Dashboard() {
     limit: 10,
   });
 
+  const { data: profileResponse, isLoading: profileLoading } = useGetProfileQuery(undefined, {
+    pollingInterval: 30000,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+  });
+  const latestUser = profileResponse?.data || user;
+  
   const hasResume = resumeData?.data && resumeData.data.skills?.length > 0;
   const extractedSkills = resumeData?.data?.skills || [];
   const applications = applicationsData?.data || [];
   const jobs = jobsData?.data || [];
 
-  // Get matched jobs with real match scores using the shared hook
-  // Build a set of applied job IDs to filter them out from recommendations
   const appliedJobIds = useMemo(() => {
     return new Set(
-      applications
-        .map((app) => app.jobId?._id || app.jobId)
-        .filter(Boolean)
+      applications.map((app) => app.jobId?._id || app.jobId).filter(Boolean),
     );
   }, [applications]);
 
@@ -76,25 +80,14 @@ export function Dashboard() {
       .map((job) => {
         const match = getJobMatch(job);
         return {
-          id: job._id,
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          type: job.employmentType?.replace("-", " ") || "Full-time",
-          salary:
-            job.salaryMin && job.salaryMax
-              ? `${job.salaryCurrency === "INR" ? "₹" : "$"}${job.salaryMin.toLocaleString()} - ${job.salaryCurrency === "INR" ? "₹" : "$"}${job.salaryMax.toLocaleString()}`
-              : "Salary not disclosed",
+          ...job,
           matchScore: match?.score || 0,
           matchColor: match?.color || "red",
           matchLabel: match?.label || "No Match",
-          skills: job.requiredSkills?.slice(0, 4) || [],
-          postedTime: getTimeAgo(job.postedAt || job.createdAt),
-          jobId: job._id,
         };
       })
       .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 6);
+      .slice(0, 3);
   }, [jobs, getJobMatch, appliedJobIds]);
 
   // Stats for StatsCard components
@@ -126,9 +119,9 @@ export function Dashboard() {
     },
     {
       label: "Profile Views",
-      value: "42",
+      value: (latestUser?.profileViews || 0).toString(),
       icon: Eye,
-      change: "+12",
+      change: latestUser?.profileViews > 0 ? "+1" : "", // simplified since we don't track historical changes per day yet
       color: "from-orange-500 to-amber-600",
     },
   ];
@@ -142,7 +135,8 @@ export function Dashboard() {
         action: `Applied for ${app.jobId?.title || "a position"}`,
         time: getTimeAgo(app.createdAt),
         icon: Briefcase,
-        color: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
+        color:
+          "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
       });
     });
 
@@ -151,7 +145,8 @@ export function Dashboard() {
         action: "Resume analyzed and skills extracted",
         time: getTimeAgo(resumeData?.data?.uploadedAt),
         icon: FileText,
-        color: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
+        color:
+          "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
       });
     }
 
@@ -163,48 +158,28 @@ export function Dashboard() {
         action: `New match found: ${match.title} at ${match.company}`,
         time: getTimeAgo(new Date()),
         icon: Sparkles,
-        color: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+        color:
+          "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
       });
     });
 
     return activities.slice(0, 4);
   }, [applications, hasResume, matchedJobs, resumeData]);
 
-  if (resumeLoading || appsLoading || jobsLoading) {
+  if (resumeLoading || appsLoading || jobsLoading || profileLoading) {
     return <PageLoader />;
   }
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         {/* Page Header */}
-        <PageHeader
-          badge={`Welcome back, ${user?.name?.split(" ")[0] || "User"}`}
-          title="Your Career"
-          gradientText="Dashboard"
-          description={
-            hasResume
-              ? "Your career journey continues. Here are your personalized job matches."
-              : "Upload your resume to unlock AI-powered job recommendations"
-          }
-        />
-
-        {!hasResume && (
-          <div className="flex justify-end">
-            <Button
-              onClick={() => navigate("/app/profile")}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all px-6"
-            >
-              <Award className="w-4 h-4 mr-2" />
-              Complete Profile
-            </Button>
-          </div>
-        )}
+        <WelcomeCard user={latestUser} />
 
         {/* Profile Progress Component */}
-        <ProfileProgress user={user} userType="jobseeker" />
+        <ProfileProgress user={latestUser} />
 
-        {/* Stats Cards - Using Common Component */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           {stats.map((stat, index) => (
             <StatsCard key={index} {...stat} />
@@ -237,11 +212,8 @@ export function Dashboard() {
             {!hasResume && (
               <EmptyState
                 title="No resume found"
-                message="Upload your resume to see personalized job matches."
+                message="Upload your resume from the sidebar to see personalized job matches."
                 icon={Briefcase}
-                action={
-                  <ResumeUpload />
-                }
               />
             )}
 
@@ -263,61 +235,13 @@ export function Dashboard() {
 
             {hasResume && matchedJobs.length > 0 && (
               <div className="space-y-4">
-                {matchedJobs.map((job, index) => (
-                  <div
-                    key={job.id}
-                    className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-100 dark:border-gray-700/50 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-start gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center flex-shrink-0">
-                            <Briefcase className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white text-lg group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                              {job.title}
-                            </h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {job.company}
-                            </p>
-                            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" /> {job.location}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" /> {job.type}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <DollarSign className="w-3 h-3" /> {job.salary}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <MatchBadge score={job.matchScore} size="md" />
-                        <Button
-                          size="sm"
-                          onClick={() => navigate(`/app/jobs/${job.id}`)}
-                          className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-                        >
-                          Apply
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50">
-                      {job.skills.map((skill) => (
-                        <span
-                          key={skill}
-                          className="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 px-3 py-1 rounded-full"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                {matchedJobs.map((job) => (
+                  <JobCard
+                    key={job._id}
+                    job={job}
+                    showActions={true}
+                    variant="default"
+                  />
                 ))}
               </div>
             )}
@@ -355,7 +279,7 @@ export function Dashboard() {
 
             {/* Your Skills Card */}
             {hasResume && extractedSkills.length > 0 && (
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-100 dark:border-gray-700/50 p-5 shadow-sm">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
                   <Code className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -381,7 +305,7 @@ export function Dashboard() {
             )}
 
             {/* Recent Activity */}
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-100 dark:border-gray-700/50 p-5 shadow-sm">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700/50 p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
                 <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 <h3 className="font-semibold text-gray-900 dark:text-white">

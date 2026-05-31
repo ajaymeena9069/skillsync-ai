@@ -1,43 +1,55 @@
-// client/src/routes/index.jsx
+/* eslint-disable react-refresh/only-export-components */
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { Suspense, lazy } from "react";
 import { RootLayout } from "../layouts/root-layout";
 import { AuthenticatedLayout } from "../layouts/authenticated-layout";
 import { MarketingLayout } from "../layouts/marketing-layout";
 import { ProtectedRoute } from "./protected-route";
 import { getUser, getRedirectPath } from "../features/auth/authUtils";
+import { USER_ROLES } from "../features/auth/authConstants";
+import { PageLoader } from "../components/PageLoader";
 
-// Marketing Pages
-import { LandingPage } from "../pages/marketing/LandingPage";
-import { FeaturesPage } from "../pages/marketing/FeaturesPage";
-import { AboutPage } from "../pages/marketing/AboutPage";
-import { ContactPage } from "../pages/marketing/ContactPage";
+// Lazy Loaded Marketing Pages
+const LandingPage = lazy(() => import("../pages/marketing/LandingPage").then(m => ({ default: m.LandingPage })));
+const FeaturesPage = lazy(() => import("../pages/marketing/FeaturesPage").then(m => ({ default: m.FeaturesPage })));
+const AboutPage = lazy(() => import("../pages/marketing/AboutPage").then(m => ({ default: m.AboutPage })));
+const ContactPage = lazy(() => import("../pages/marketing/ContactPage").then(m => ({ default: m.ContactPage })));
 
-// Authenticated Pages - Common
-import { Dashboard } from "../pages/jobseeker/Dashboard";
-import { JobsPage } from "../pages/jobseeker/JobsPage";
-import { SettingsPage } from "../pages/SettingsPage";
+// Lazy Loaded Authenticated Pages - Common
+const Dashboard = lazy(() => import("../pages/jobseeker/Dashboard").then(m => ({ default: m.Dashboard })));
+const JobsPage = lazy(() => import("../pages/jobseeker/JobsPage").then(m => ({ default: m.JobsPage })));
+const SettingsPage = lazy(() => import("../pages/SettingsPage").then(m => ({ default: m.SettingsPage })));
 
-// Job Seeker Only Pages
-import { ResumePage } from "../pages/jobseeker/ResumePage";
-import { SkillGapPage } from "../pages/jobseeker/SkillGapPage";
-import { RoadmapPage } from "../pages/jobseeker/RoadmapPage";
-import { ProfilePage } from "../pages/jobseeker/ProfilePage";
-import MyApplicationsPage from "../pages/jobseeker/MyApplicationsPage";
-import JobDetailsPage from "../pages/jobseeker/JobDetailsPage";
-// Recruiter Only Pages
-import { RecruiterDashboard } from "../pages/recruiter/RecruiterDashboard";
-import { CandidatesListPage } from "../pages/recruiter/CandidatesListPage";
-import { CandidateProfile } from "../pages/recruiter/CandidateProfile";
-import { PostedJobsPage } from "../pages/recruiter/PostedJobsPage";
-import { AnalyticsPage } from "../pages/recruiter/AnalyticsPage";
-import { CompanyPage } from "../pages/recruiter/CompanyPage";
-import { PublicCompanyPage } from "../pages/recruiter/PublicCompanyPage";
-import JobApplicationsPage from "../pages/recruiter/JobApplicationsPage";
+// Lazy Loaded Job Seeker Only Pages
+const ResumePage = lazy(() => import("../pages/jobseeker/ResumePage").then(m => ({ default: m.ResumePage })));
+const SkillGapPage = lazy(() => import("../pages/jobseeker/SkillGapPage").then(m => ({ default: m.SkillGapPage })));
+const RoadmapPage = lazy(() => import("../pages/jobseeker/RoadmapPage").then(m => ({ default: m.RoadmapPage })));
+const ProfilePage = lazy(() => import("../pages/jobseeker/ProfilePage").then(m => ({ default: m.ProfilePage })));
+const MyApplicationsPage = lazy(() => import("../pages/jobseeker/MyApplicationsPage"));
+const JobDetailsPage = lazy(() => import("../pages/jobseeker/JobDetailsPage"));
+
+// Lazy Loaded Recruiter Only Pages
+const RecruiterDashboard = lazy(() => import("../pages/recruiter/RecruiterDashboard").then(m => ({ default: m.RecruiterDashboard })));
+const CandidatesListPage = lazy(() => import("../pages/recruiter/CandidatesListPage").then(m => ({ default: m.CandidatesListPage })));
+const CandidateProfile = lazy(() => import("../pages/recruiter/CandidateProfile").then(m => ({ default: m.CandidateProfile })));
+const PostedJobsPage = lazy(() => import("../pages/recruiter/PostedJobsPage").then(m => ({ default: m.PostedJobsPage })));
+const AnalyticsPage = lazy(() => import("../pages/recruiter/AnalyticsPage").then(m => ({ default: m.AnalyticsPage })));
+const CompanyPage = lazy(() => import("../pages/recruiter/CompanyPage").then(m => ({ default: m.CompanyPage })));
+const PublicCompanyPage = lazy(() => import("../pages/recruiter/PublicCompanyPage").then(m => ({ default: m.PublicCompanyPage })));
+const JobApplicationsPage = lazy(() => import("../pages/recruiter/JobApplicationsPage"));
 
 // Auth Pages
-import { AuthPage } from "../pages/auth/AuthPage";
-import VerifyEmailPage from "../pages/auth/VerifyEmailPage";
-import { USER_ROLES } from "../features/auth/authConstants";
+const AuthPage = lazy(() => import("../pages/auth/AuthPage").then(m => ({ default: m.AuthPage })));
+const VerifyEmailPage = lazy(() => import("../pages/auth/VerifyEmailPage"));
+const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage").then(m => ({ default: m.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import("../pages/auth/ResetPasswordPage").then(m => ({ default: m.ResetPasswordPage })));
+
+// Suspense Wrapper component
+const Loadable = (Component) => (props) => (
+  <Suspense fallback={<PageLoader />}>
+    <Component {...props} />
+  </Suspense>
+);
 
 // Role-based redirect component
 function RoleBasedRedirect() {
@@ -55,16 +67,18 @@ export const router = createBrowserRouter([
       {
         element: <MarketingLayout />,
         children: [
-          { index: true, element: <LandingPage /> },
-          { path: "features", element: <FeaturesPage /> },
-          { path: "about", element: <AboutPage /> },
-          { path: "contact", element: <ContactPage /> },
+          { index: true, element: Loadable(LandingPage)() },
+          { path: "features", element: Loadable(FeaturesPage)() },
+          { path: "about", element: Loadable(AboutPage)() },
+          { path: "contact", element: Loadable(ContactPage)() },
         ],
       },
 
       // Auth Routes (public)
-      { path: "auth", element: <AuthPage /> },
-      { path: "verify-email", element: <VerifyEmailPage /> },
+      { path: "auth", element: Loadable(AuthPage)() },
+      { path: "verify-email", element: Loadable(VerifyEmailPage)() },
+      { path: "forgot-password", element: Loadable(ForgotPasswordPage)() },
+      { path: "reset-password", element: Loadable(ResetPasswordPage)() },
 
       // Protected Routes (require authentication)
       {
@@ -76,9 +90,9 @@ export const router = createBrowserRouter([
         ),
         children: [
           // ========== COMMON ROUTES (Both roles can access) ==========
-          { path: "settings", element: <SettingsPage /> },
-          { path: "jobs/:jobId", element: <JobDetailsPage /> },
-          { path: "companies/:recruiterId", element: <PublicCompanyPage /> },
+          { path: "settings", element: Loadable(SettingsPage)() },
+          { path: "jobs/:jobId", element: Loadable(JobDetailsPage)() },
+          { path: "companies/:recruiterId", element: Loadable(PublicCompanyPage)() },
           { path: "", element: <RoleBasedRedirect /> },
 
           // ========== JOB SEEKER ONLY ROUTES ==========
@@ -86,7 +100,7 @@ export const router = createBrowserRouter([
             path: "jobs",
             element: (
               <ProtectedRoute requiredRole={USER_ROLES.JOBSEEKER}>
-                <JobsPage />
+                {Loadable(JobsPage)()}
               </ProtectedRoute>
             ),
           },
@@ -94,7 +108,7 @@ export const router = createBrowserRouter([
             path: "dashboard",
             element: (
               <ProtectedRoute requiredRole="jobseeker">
-                <Dashboard />
+                {Loadable(Dashboard)()}
               </ProtectedRoute>
             ),
           },
@@ -102,7 +116,7 @@ export const router = createBrowserRouter([
             path: "profile",
             element: (
               <ProtectedRoute requiredRole="jobseeker">
-                <ProfilePage />
+                {Loadable(ProfilePage)()}
               </ProtectedRoute>
             ),
           },
@@ -110,7 +124,7 @@ export const router = createBrowserRouter([
             path: "resume",
             element: (
               <ProtectedRoute requiredRole="jobseeker">
-                <ResumePage />
+                {Loadable(ResumePage)()}
               </ProtectedRoute>
             ),
           },
@@ -118,7 +132,7 @@ export const router = createBrowserRouter([
             path: "my-applications",
             element: (
               <ProtectedRoute requiredRole="jobseeker">
-                <MyApplicationsPage />
+                {Loadable(MyApplicationsPage)()}
               </ProtectedRoute>
             ),
           },
@@ -126,7 +140,7 @@ export const router = createBrowserRouter([
             path: "skill-gap",
             element: (
               <ProtectedRoute requiredRole="jobseeker">
-                <SkillGapPage />
+                {Loadable(SkillGapPage)()}
               </ProtectedRoute>
             ),
           },
@@ -134,15 +148,7 @@ export const router = createBrowserRouter([
             path: "roadmap",
             element: (
               <ProtectedRoute requiredRole="jobseeker">
-                <RoadmapPage />
-              </ProtectedRoute>
-            ),
-          },
-          {
-            path: "jobs/:jobId",
-            element: (
-              <ProtectedRoute>
-                <JobDetailsPage />
+                {Loadable(RoadmapPage)()}
               </ProtectedRoute>
             ),
           },
@@ -152,7 +158,7 @@ export const router = createBrowserRouter([
             path: "recruiter-dashboard",
             element: (
               <ProtectedRoute requiredRole="recruiter">
-                <RecruiterDashboard />
+                {Loadable(RecruiterDashboard)()}
               </ProtectedRoute>
             ),
           },
@@ -160,7 +166,7 @@ export const router = createBrowserRouter([
             path: "company",
             element: (
               <ProtectedRoute requiredRole="recruiter">
-                <CompanyPage />
+                {Loadable(CompanyPage)()}
               </ProtectedRoute>
             ),
           },
@@ -168,7 +174,7 @@ export const router = createBrowserRouter([
             path: "candidates",
             element: (
               <ProtectedRoute requiredRole="recruiter">
-                <CandidatesListPage />
+                {Loadable(CandidatesListPage)()}
               </ProtectedRoute>
             ),
           },
@@ -176,7 +182,7 @@ export const router = createBrowserRouter([
             path: "candidates/:id",
             element: (
               <ProtectedRoute requiredRole="recruiter">
-                <CandidateProfile />
+                {Loadable(CandidateProfile)()}
               </ProtectedRoute>
             ),
           },
@@ -184,7 +190,7 @@ export const router = createBrowserRouter([
             path: "jobs-posted",
             element: (
               <ProtectedRoute requiredRole="recruiter">
-                <PostedJobsPage />
+                {Loadable(PostedJobsPage)()}
               </ProtectedRoute>
             ),
           },
@@ -192,7 +198,7 @@ export const router = createBrowserRouter([
             path: "analytics",
             element: (
               <ProtectedRoute requiredRole="recruiter">
-                <AnalyticsPage />
+                {Loadable(AnalyticsPage)()}
               </ProtectedRoute>
             ),
           },
@@ -200,7 +206,7 @@ export const router = createBrowserRouter([
             path: "jobs/:jobId/applications",
             element: (
               <ProtectedRoute requiredRole="recruiter">
-                <JobApplicationsPage />
+                {Loadable(JobApplicationsPage)()}
               </ProtectedRoute>
             ),
           },

@@ -1,386 +1,295 @@
-# 🚀 SkillSync AI — Complete Project Documentation
+// src/components/common/AIAnalysisModal.jsx
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
+import {
+  X,
+  Brain,
+  Loader2,
+  Sparkles,
+  CheckCircle2,
+  TrendingUp,
+  Lightbulb,
+  AlertCircle,
+  ThumbsUp,
+  ThumbsDown,
+  Star,
+  Code,
+  Award,
+  Zap,
+} from "lucide-react";
+import { Button } from "./Button";
+import { useGetCandidateMatchAnalysisQuery } from "../services/matchApi";
 
-> **Last Updated**: May 25, 2026
-> **Purpose**: Full context for any AI agent to continue development seamlessly.
+export function AIAnalysisModal({
+  isOpen,
+  onClose,
+  applicationId,
+  candidateName,
+  jobTitle,
+}) {
+  const [shouldFetch, setShouldFetch] = useState(false);
+  const { data, isLoading, refetch } = useGetCandidateMatchAnalysisQuery(applicationId, {
+    skip: !shouldFetch,
+  });
 
----
+  const analysis = data?.data;
 
-## 📌 Project Overview
+  useEffect(() => {
+    if (isOpen && !shouldFetch) {
+      setShouldFetch(true);
+    }
+  }, [isOpen, shouldFetch]);
 
-**SkillSync AI** is an AI-powered career intelligence platform built on the **MERN stack** (MongoDB, Express, React 19, Node.js). Job seekers upload resumes, get AI-parsed skills, match with jobs via intelligent algorithms, and receive personalized learning roadmaps. Recruiters post jobs, manage applications, view AI-ranked candidates, and track analytics.
+  if (typeof document === "undefined") return null;
 
----
+  const getScoreLevel = (score) => {
+    if (score >= 80) return { label: "Excellent", color: "emerald", icon: Award };
+    if (score >= 60) return { label: "Good", color: "amber", icon: Star };
+    return { label: "Low", color: "red", icon: AlertCircle };
+  };
 
-## ✅ Completed Features (Production Ready)
+  const scoreLevel = analysis ? getScoreLevel(analysis.matchScore) : null;
 
-### 1. 🔐 Authentication System
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999]"
+          />
 
-- Email/Password registration with Argon2 hashing
-- JWT tokens stored in `localStorage` (`accessToken` key)
-- Google OAuth 2.0 (credential flow with account linking)
-- Email verification (6-digit OTP via Brevo API, 10 min expiry)
-- Password reset (token-based, 1 hour expiry)
-- Role-based access (`user` / `recruiter`) with middleware
-- Role selection modal for Google sign-in (first-time users)
-- Auth persistence via Redux + localStorage
+          {/* Modal Container */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-2xl max-h-[85vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden z-[10000] flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/40 dark:to-indigo-900/40">
+                  <Brain className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">AI Deep Analysis</h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Powered by Gemini AI</p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
 
-### 2. 📄 Resume Processing
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+              {/* Candidate & Job Info */}
+              <div className="bg-gradient-to-r from-purple-50/80 to-indigo-50/80 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-purple-100 dark:border-purple-800/50">
+                <p className="text-sm text-gray-700 dark:text-gray-300 text-center">
+                  Analyzing <span className="font-semibold text-purple-700 dark:text-purple-300">{candidateName}</span> for{" "}
+                  <span className="font-semibold text-purple-700 dark:text-purple-300">{jobTitle}</span>
+                </p>
+              </div>
 
-- File upload: PDF/DOCX via Multer (memory storage)
-- Text extraction: `pdf-parse` (PDF), `mammoth` (DOCX)
-- AI parsing: Google Gemini API with multi-model fallback
-- Keyword fallback: 60+ skills database
-- Cloudinary upload after parsing (parallel, non-blocking)
-- Resume scoring with visual progress rings
-- Resume synced to Redux + localStorage
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="relative">
+                    <div className="absolute inset-0 rounded-full bg-purple-500/20 blur-xl animate-pulse" />
+                    <Loader2 className="w-12 h-12 text-purple-600 animate-spin relative" />
+                  </div>
+                  <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">AI is analyzing candidate fit...</p>
+                </div>
+              ) : analysis ? (
+                <div className="space-y-6">
+                  {/* Score Card */}
+                  <div className="bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl p-5 text-white shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-100 text-sm font-medium">Overall Match Score</p>
+                        <p className="text-4xl font-bold tracking-tight">{analysis.matchScore}%</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-16 relative">
+                          <svg className="w-full h-full transform -rotate-90">
+                            <circle
+                              cx="32"
+                              cy="32"
+                              r="28"
+                              stroke="rgba(255,255,255,0.2)"
+                              strokeWidth="6"
+                              fill="none"
+                            />
+                            <circle
+                              cx="32"
+                              cy="32"
+                              r="28"
+                              stroke="white"
+                              strokeWidth="6"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 28}`}
+                              strokeDashoffset={`${2 * Math.PI * 28 * (1 - analysis.matchScore / 100)}`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </div>
+                        {scoreLevel && (
+                          <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+                            <scoreLevel.icon className="w-3.5 h-3.5" />
+                            <span className="text-xs font-medium">{scoreLevel.label}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <span className="text-xs text-purple-100">Based on skill match & job requirements</span>
+                    </div>
+                  </div>
 
-### 3. 👤 User Profile (Job Seeker)
+                  {/* Skills Analysis */}
+                  <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Code className="w-5 h-5 text-purple-500" />
+                      <h3 className="font-semibold text-gray-900 dark:text-white">Skills Analysis</h3>
+                    </div>
+                    <div className="space-y-4">
+                      {analysis.strengthMatches?.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-green-600 dark:text-green-400 mb-2 flex items-center gap-1">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Strengths ({analysis.strengthMatches.length})
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {analysis.strengthMatches.map((skill) => (
+                              <span
+                                key={skill}
+                                className="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-xs font-medium dark:bg-green-900/30 dark:text-green-400"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {analysis.gapSkills?.length > 0 && (
+                        <div>
+                          <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-2 flex items-center gap-1">
+                            <AlertCircle className="w-4 h-4" />
+                            Skill Gaps ({analysis.gapSkills.length})
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {analysis.gapSkills.map((skill) => (
+                              <span
+                                key={skill}
+                                className="px-3 py-1.5 bg-red-100 text-red-700 rounded-full text-xs font-medium dark:bg-red-900/30 dark:text-red-400"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-- View & edit profile with Save/Cancel pattern
-- Avatar upload via Cloudinary with preview & cleanup
-- Skills management (add/remove)
-- Social links (LinkedIn, GitHub, Portfolio)
-- Profile completeness tracking
-- Dark mode support
+                  {/* Fit Analysis */}
+                  <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUp className="w-5 h-5 text-purple-500" />
+                      <h3 className="font-semibold text-gray-900 dark:text-white">Fit Analysis</h3>
+                    </div>
+                    <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{analysis.fitAnalysis}</p>
+                  </div>
 
-### 4. 🏢 Company Profile (Recruiter)
+                  {/* Recommendations */}
+                  <div className="bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Lightbulb className="w-5 h-5 text-amber-500" />
+                      <h3 className="font-semibold text-gray-900 dark:text-white">Recommendations</h3>
+                    </div>
+                    <ul className="space-y-2">
+                      {analysis.recommendations?.map((rec, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
+                          <Zap className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
 
-- View & edit company details with Save/Cancel pattern
-- Logo upload via Cloudinary with preview & cleanup
-- Company completion tracking
-- Benefit tags management
-- Social links & company stats
+                  {/* Final Verdict */}
+                  <div
+                    className={`rounded-xl p-4 text-center border ${
+                      analysis.matchScore >= 80
+                        ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                        : analysis.matchScore >= 60
+                        ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800"
+                        : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      {analysis.matchScore >= 80 ? (
+                        <>
+                          <ThumbsUp className="w-5 h-5 text-green-600" />
+                          <span className="font-medium text-green-700 dark:text-green-400">
+                            Strong Candidate – Highly Recommended
+                          </span>
+                        </>
+                      ) : analysis.matchScore >= 60 ? (
+                        <>
+                          <Star className="w-5 h-5 text-yellow-600" />
+                          <span className="font-medium text-yellow-700 dark:text-yellow-400">
+                            Potential Candidate – Consider for Screening
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <ThumbsDown className="w-5 h-5 text-red-600" />
+                          <span className="font-medium text-red-700 dark:text-red-400">
+                            Not Recommended for this Role
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <Brain className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400">Unable to load analysis.</p>
+                  <Button
+                    onClick={() => {
+                      if (!shouldFetch) setShouldFetch(true);
+                      else refetch();
+                    }}
+                    className="mt-4 bg-gradient-to-r from-purple-600 to-indigo-600"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" /> Retry
+                  </Button>
+                </div>
+              )}
 
-### 5. 💼 Job Management
-
-- Full CRUD operations
-- Job form modal with React Hook Form + Zod validation
-- Public job listing with search, filter, pagination
-- Employment type & location filters
-- Experience level & salary range filters
-
-### 6. 📝 Application System
-
-- Apply with cover letter (React Hook Form)
-- Track application status (Pending → Reviewed → Shortlisted → Rejected/Hired)
-- Withdraw applications
-- My Applications page with status tracking & stats
-- Recruiter: View applications per job, update status, add notes
-- Match score on candidate cards
-
-### 7. 🎯 Job Matching (AI-Powered)
-
-- Skill-based match score calculation
-- Color-coded match badges
-- `useJobMatch` hook for sorting/filtering
-- AI-powered candidate match analysis
-- Matched skills, missing skills, extra skills breakdown
-
-### 8. 👥 Candidate Management (Recruiter)
-
-- Candidates list with filtering by job & status
-- Candidate profile with AI analysis panel
-- Status management & notes section
-- Stats cards (Total, Pending, Shortlisted, Hired)
-
-### 9. 📊 Recruiter Dashboard
-
-- Dashboard stats (Active Jobs, Total Candidates, Interviews, Hires)
-- Recent activity feed
-- Quick action buttons
-
-### 10. 📈 Analytics Page (Recruiter)
-
-- Status distribution chart (Recharts PieChart)
-- Monthly applications trend (Recharts LineChart)
-- Top performing jobs (Recharts BarChart)
-- Key metrics cards
-
-### 11. 📋 User Dashboard (Job Seeker)
-
-- Profile completion score with progress ring
-- Top job matches (sorted by match score)
-- Recent activity feed
-- Quick stats
-
-### 12. 🔍 Skill Gap Analysis
-
-- Current vs required skills comparison
-- Missing skills by importance (Critical/Recommended/Nice to Have)
-- Learning resource recommendations
-
-### 13. 🗺️ Roadmap Generation
-
-- Multi-week/multi-phase learning roadmaps
-- Tasks with status tracking
-- Resources linked per task
-
-### 14. 💬 AI Chat Assistant
-
-- Floating chat panel with suggested prompts
-- Simulated AI responses (ready for real API integration)
-
-### 15. 🔔 Notifications Panel
-
-- Slide-out notification panel
-- Categorized notifications
-- Unread count indicator
-
-### 16. 🌐 Marketing Pages
-
-- Landing, Features, About, Contact pages
-
-### 17. 🎨 UI Components (50+ shadcn/ui)
-
-- Complete shadcn/ui component library
-- Custom: `MatchBadge`, `ProgressBar`, `ProfileProgress`, `StatsCard`, `CandidateCard`, `FilterBar`, `EmptyState`, `PageLoader`
-
----
-
-## 🏗️ Tech Stack
-
-### Backend
-
-| Category    | Technology                       |
-| ----------- | -------------------------------- |
-| Runtime     | Node.js (ES Modules)             |
-| Framework   | Express 4.18.2                   |
-| Database    | Mongoose 8.0.0 + MongoDB         |
-| Auth        | JWT, Argon2, Google Auth Library |
-| AI          | @google/generative-ai 0.24.1     |
-| File Upload | Multer, Cloudinary               |
-| Email       | Brevo REST API                   |
-| Parsing     | pdf-parse, mammoth               |
-| Validation  | Zod 3.22.4                       |
-| Security    | Helmet, CORS, Rate Limit         |
-| Realtime    | Socket.io, Redis (optional)      |
-
-### Frontend
-
-| Category | Technology               |
-| -------- | ------------------------ |
-| Runtime  | React 19 + Vite 8        |
-| State    | Redux Toolkit, RTK Query |
-| Styling  | Tailwind CSS 4           |
-| UI Kit   | shadcn/ui components     |
-| Icons    | Lucide React             |
-| Forms    | React Hook Form 7        |
-| Charts   | Recharts 3               |
-| Auth     | @react-oauth/google      |
-| Router   | React Router DOM 7       |
-
----
-
-## 📁 Folder Structure (Key Paths)
-
-### Frontend (`client/src/`)
-
----
-
-## 🗄️ Database Models
-
-### User Model
-
-```js
-{
-  name: String,
-  email: String (unique),
-  password: String (null for Google users),
-  googleId: String,
-  role: "user" | "recruiter",
-  avatar: String,                    // Cloudinary URL
-  avatarPublicId: String,            // For cleanup on re-upload
-  phone: String,
-  location: String,
-  bio: String,
-  currentRole: String,
-  experience: String,
-  skills: [String],
-  resumeUrl: String,
-  parsedResume: Mixed,
-  preferredJobType: String,
-  expectedSalary: String,
-  socialLinks: { linkedin, github, portfolio, twitter },
-  company: {                         // Recruiters only
-    name, logo, logoPublicId, description, website, industry, size,
-    founded, headquarters, culture, benefits, socialLinks
-  },
-  isProfileComplete: Boolean,
-  isCompanyComplete: Boolean,
-  isEmailVerified: Boolean,
-  verificationCode: String,
-  verificationCodeExpires: Date,
-  passwordResetToken: String,
-  passwordResetExpires: Date
+              <div className="flex justify-end gap-3 pt-2 pb-2">
+                <Button variant="outline" onClick={onClose}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
 }
-```
-
-{
-userId: ObjectId,
-originalName: String,
-fileUrl: String, // Cloudinary URL
-cloudinaryId: String,
-extractedText: String,
-parsedSkills: [String],
-experience: String,
-education: [{ degree, institution, year }],
-projects: [{ name, description }],
-isActive: Boolean
-}
-
-{
-title: String,
-company: String,
-location: String,
-locationType: "remote" | "onsite" | "hybrid",
-employmentType: "full-time" | "part-time" | "contract" | "internship",
-experienceLevel: "entry" | "mid" | "senior" | "lead",
-salaryMin: Number,
-salaryMax: Number,
-salaryCurrency: String,
-description: String,
-requiredSkills: [String],
-preferredSkills: [String],
-benefits: [String],
-recruiterId: ObjectId,
-status: "active" | "closed" | "draft",
-applicationsCount: Number,
-viewsCount: Number
-}
-
-{
-jobId: ObjectId,
-userId: ObjectId,
-resumeUrl: String,
-coverLetter: String,
-status: "pending" | "reviewed" | "shortlisted" | "rejected" | "hired",
-matchScore: Number,
-notes: String,
-reviewedAt: Date,
-reviewedBy: ObjectId
-}
-
-🔌 API Endpoints (Core)
-Auth (/api/auth)
-Method Endpoint Description
-POST /register Email/password registration
-POST /login Email/password login
-POST /google Google OAuth verification
-POST /verify-email 6-digit OTP verification
-POST /forgot-password Send reset email
-POST /reset-password Reset password with token
-Users (/api/users) — Protected
-Method Endpoint Description
-GET /profile Get user profile
-PUT /profile Update profile
-POST /avatar Upload avatar (Cloudinary)
-Jobs (/api/jobs)
-Method Endpoint Auth Description
-GET / Public List jobs with filters
-GET /:id Public Get single job
-POST / Recruiter Create job
-PUT /:id Recruiter Update job
-DELETE /:id Recruiter Delete job
-GET /recruiter/my-jobs Recruiter Get recruiter's jobs
-Applications (/api/applications) — Protected
-Method Endpoint Auth Description
-POST /apply User Apply for job
-GET /my-applications User Get user's applications
-DELETE /:id User Withdraw application
-GET /job/:jobId Recruiter Get job applications
-PUT /:id/status Recruiter Update status
-Matches (/api/matches) — Recruiter Only
-Method Endpoint Description
-GET /job/:jobId/candidates Get candidates with match scores
-GET /application/:id/analysis AI analysis for application
-Company (/api/company) — Recruiter Only
-Method Endpoint Description
-GET /profile Get company profile
-PUT /profile Update company profile
-POST /logo Upload company logo
-🔄 Key System Flows
-Job Seeker Flow
-text
-Register/Login → Upload Resume → AI Parsing → View Resume Page
-↓
-Browse Jobs (match score badges) → Apply with Cover Letter
-↓
-Track Applications → View Skill Gap Analysis → Follow Roadmap
-Recruiter Flow
-text
-Register/Login → Setup Company Profile → Post Jobs
-↓
-View Candidates (AI-ranked by match score)
-↓
-Review Applications → Update Status → Add Notes
-↓
-View Analytics & Dashboard Stats
-Avatar Upload Flow
-text
-User clicks avatar → File picker → Preview shown
-↓
-Save Changes → Upload to Cloudinary → Old avatar deleted
-↓
-Redux updated → UI reflects new avatar
-🔧 Environment Variables
-env
-PORT=5000
-MONGODB_URI=
-JWT_SECRET=
-JWT_EXPIRES_IN=7d
-GOOGLE_CLIENT_ID=
-GEMINI_API_KEY=
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-BREVO_API_KEY=
-BREVO_SENDER_EMAIL=
-BREVO_SENDER_NAME=SkillSync AI
-FRONTEND_URL=http://localhost:5173
-📊 Feature Status
-Feature Status
-Email/Password Auth ✅
-Google OAuth ✅
-Email Verification ✅
-Password Reset ✅
-Role-based Access ✅
-Resume Upload & AI Parsing ✅
-Cloudinary Storage (Avatars, Logos, Resumes) ✅
-User Profile (Save/Cancel) ✅
-Company Profile ✅
-Job CRUD ✅
-Application System ✅
-Match Algorithm ✅
-AI Match Analysis ✅
-Candidate Management ✅
-Recruiter Dashboard ✅
-Analytics Charts ✅
-User Dashboard ✅
-Skill Gap Analysis ✅
-Roadmap Generation ✅
-Marketing Pages ✅
-Dark Mode ✅
-Mobile Responsive ✅
-Redux Persistence ✅
-RTK Query Caching ✅
-Zod Validation ✅
-🏆 Technical Highlights
-Full-Stack Authentication — JWT, Google OAuth, email verification, password reset, role-based guards
-
-AI-Powered Resume Parsing — Gemini API with multi-model fallback + 60+ skill keyword extraction
-
-Intelligent Job Matching — Skill-based scoring, AI analysis, color-coded badges
-
-Cloud File Management — Multer + Cloudinary with old file cleanup on re-upload
-
-Email Service — Brevo REST API (bypasses Render SMTP blocks)
-
-Save/Cancel UX Pattern — Profile edits only persist on explicit Save
-
-50+ shadcn/ui Components — Consistent, accessible UI kit
-
-Dark Mode — Full Tailwind CSS dark mode support
-
-🔑 Key Files for AI Agents
-If you need to work on:
-Authentica

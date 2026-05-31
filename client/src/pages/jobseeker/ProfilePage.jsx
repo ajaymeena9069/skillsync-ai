@@ -22,21 +22,22 @@ import {
   Lock,
 } from "lucide-react";
 import { Button } from "../../components/Button";
+import { PageLoader } from "../../components/PageLoader";
 import { Badge } from "../../components/Badge";
 import { Input } from "../../components/Input";
 import { ProgressBar } from "../../components/ProgressBar";
 import { ProfileProgress } from "../../components/common/ProfileProgress";
+import { OptimizedAvatar } from "../../components/common/OptimizedAvatar";
 import {
   useGetProfileQuery,
   useUpdateProfileMutation,
   useUploadAvatarMutation,
-} from "../../services/userApi";
-import { updateUserProfile } from "../../features/auth/authSlice";
+} from "../../services/jobseekerApi";
+import { updateUser } from "../../features/auth/authSlice";
 
 export function ProfilePage() {
   const dispatch = useDispatch();
   const reduxUser = useSelector((state) => state.auth.user);
-  
   const avatarInputRef = useRef(null);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -45,8 +46,6 @@ export function ProfilePage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-
-  // Avatar upload state
   const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
 
@@ -72,12 +71,11 @@ export function ProfilePage() {
     },
   });
 
-  // Load data from API/Redux — only sync when NOT in edit mode
+  // Load data from API/Redux
   useEffect(() => {
-    if (isEditing) return; // Don't overwrite while user is editing
     const userData = profileData?.data || reduxUser;
-    if (userData) {
-      const data = {
+    if (userData && !isEditing) {
+      setFormData({
         name: userData.name || "",
         email: userData.email || "",
         phone: userData.phone || "",
@@ -93,15 +91,12 @@ export function ProfilePage() {
           github: userData.socialLinks?.github || "",
           portfolio: userData.socialLinks?.portfolio || "",
         },
-      };
-      setFormData(data);
-      // Sync avatar preview from server — but only if no unsaved selection exists
+      });
       if (!selectedAvatarFile) {
         setAvatarPreview(userData.avatar || null);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileData, reduxUser]); // isEditing intentionally excluded to prevent re-sync during edit
+  }, [profileData, reduxUser, isEditing]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -133,7 +128,6 @@ export function ProfilePage() {
     }));
   };
 
-  // ─── Avatar handlers ──────────────────────────────────
   const handleAvatarClick = () => {
     avatarInputRef.current?.click();
   };
@@ -142,7 +136,6 @@ export function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate image type
     const validTypes = [
       "image/jpeg",
       "image/jpg",
@@ -156,7 +149,6 @@ export function ProfilePage() {
       return;
     }
 
-    // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       setErrorMessage("Image must be less than 5MB");
       setTimeout(() => setErrorMessage(""), 4000);
@@ -164,52 +156,40 @@ export function ProfilePage() {
     }
 
     setSelectedAvatarFile(file);
-    const previewUrl = URL.createObjectURL(file);
-    setAvatarPreview(previewUrl);
+    setAvatarPreview(URL.createObjectURL(file));
     setSuccessMessage("New avatar selected. Click Save to upload.");
     setTimeout(() => setSuccessMessage(""), 3000);
-
-    // Reset input so same file can be re-selected
     e.target.value = "";
   };
 
   const handleRemoveAvatarPreview = () => {
     setSelectedAvatarFile(null);
-    // Revert to original avatar from backend/Redux
     const originalAvatar =
       profileData?.data?.avatar || reduxUser?.avatar || null;
     setAvatarPreview(originalAvatar);
-    setSuccessMessage("Avatar selection cancelled. Original restored.");
+    setSuccessMessage("Avatar selection cancelled.");
     setTimeout(() => setSuccessMessage(""), 3000);
   };
 
-  // ─── Entry into edit mode ─────────────────────────────
-  const handleEnterEditMode = () => {
-    setIsEditing(true);
-    setSuccessMessage("");
-    setErrorMessage("");
-    // Ensure avatar preview reflects current avatar, not a stale selection
-    if (!selectedAvatarFile) {
-      setAvatarPreview(reduxUser?.avatar || profileData?.data?.avatar || null);
-    }
-  };
+  // client/src/pages/ProfilePage.jsx - Fixed handleSave function
 
-  // ─── Save ─────────────────────────────────────────────
   const handleSave = async () => {
     setIsSaving(true);
-    try {
-      let finalAvatarUrl = reduxUser?.avatar || "";
+    setErrorMessage("");
 
-      // Upload new avatar first if selected
+    try {
+      // Upload avatar first if changed
       if (selectedAvatarFile) {
         const avatarFormData = new FormData();
         avatarFormData.append("avatar", selectedAvatarFile);
         const uploadResult = await uploadAvatar(avatarFormData).unwrap();
-        finalAvatarUrl = uploadResult.data?.avatar || "";
-        // Update Redux immediately with new avatar
-        dispatch(updateUserProfile({ avatar: finalAvatarUrl }));
+
+        if (uploadResult.success) {
+          dispatch(updateUser({ avatar: uploadResult.data.avatar }));
+        }
       }
 
+      // Update profile - ONLY send allowed fields
       const updateData = {
         name: formData.name,
         phone: formData.phone,
@@ -223,34 +203,52 @@ export function ProfilePage() {
         expectedSalary: formData.expectedSalary,
       };
 
+      // ✅ Remove any undefined or empty string fields that might cause issues
+      Object.keys(updateData).forEach((key) => {
+        if (updateData[key] === undefined || updateData[key] === null) {
+          delete updateData[key];
+        }
+      });
+
       const result = await updateProfile(updateData).unwrap();
 
-      // Update Redux state with complete data
-      if (result.data) {
-        dispatch(
-          updateUserProfile({
-            ...result.data,
-            avatar: finalAvatarUrl || result.data.avatar,
-          }),
-        );
+      if (result.success) {
+        // Update Redux state with all profile data
+        const updatedUserData = {
+          name: formData.name,
+          phone: formData.phone,
+          location: formData.location,
+          currentRole: formData.currentRole,
+          experience: formData.experience,
+          bio: formData.bio,
+          skills: formData.skills,
+          socialLinks: formData.socialLinks,
+          preferredJobType: formData.preferredJobType,
+          expectedSalary: formData.expectedSalary,
+          isProfileComplete: result.data?.isProfileComplete === true, // ✅ Ensure boolean
+        };
+
+        dispatch(updateUser(updatedUserData));
+
+        setSuccessMessage(result.message || "Profile updated successfully!");
+        setIsEditing(false);
+        setSelectedAvatarFile(null);
+        refetch();
+
+        setTimeout(() => setSuccessMessage(""), 3000);
+      } else {
+        setErrorMessage(result.message || "Failed to update profile");
       }
-
-      setSuccessMessage(result.message || "Profile updated successfully!");
-      setIsEditing(false);
-      setSelectedAvatarFile(null);
-      refetch();
-
-      setTimeout(() => setSuccessMessage(""), 3000);
     } catch (error) {
       console.error("Save error:", error);
-      setErrorMessage(error.data?.message || "Failed to update profile");
+      const errorMsg =
+        error?.data?.message || error?.message || "Failed to update profile";
+      setErrorMessage(errorMsg);
       setTimeout(() => setErrorMessage(""), 4000);
     } finally {
       setIsSaving(false);
     }
   };
-
-  // ─── Cancel ───────────────────────────────────────────
   const handleCancel = () => {
     const userData = profileData?.data || reduxUser;
     if (userData) {
@@ -271,39 +269,36 @@ export function ProfilePage() {
           portfolio: userData.socialLinks?.portfolio || "",
         },
       });
-      // Reset avatar preview to original
       setAvatarPreview(userData.avatar || null);
     }
     setSelectedAvatarFile(null);
-    setSuccessMessage("");
-    setErrorMessage("");
     setShowSkillInput(false);
     setIsEditing(false);
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const calculateProfileCompleteness = () => {
     let filled = 0;
     const total = 8;
-    if (reduxUser?.name && reduxUser.name.trim() !== "") filled++;
-    if (reduxUser?.email && reduxUser.email.trim() !== "") filled++;
-    if (reduxUser?.phone && reduxUser.phone.trim() !== "") filled++;
-    if (reduxUser?.location && reduxUser.location.trim() !== "") filled++;
-    if (reduxUser?.currentRole && reduxUser.currentRole.trim() !== "") filled++;
-    if (reduxUser?.experience && reduxUser.experience !== "" && reduxUser.experience !== "0 years") filled++;
+    if (reduxUser?.name && reduxUser.name.trim()) filled++;
+    if (reduxUser?.email && reduxUser.email.trim()) filled++;
+    if (reduxUser?.phone && reduxUser.phone.trim()) filled++;
+    if (reduxUser?.location && reduxUser.location.trim()) filled++;
+    if (reduxUser?.currentRole && reduxUser.currentRole.trim()) filled++;
+    if (
+      reduxUser?.experience &&
+      reduxUser.experience !== "" &&
+      reduxUser.experience !== "0 years"
+    )
+      filled++;
     if (reduxUser?.skills && reduxUser.skills.length >= 3) filled++;
     if (reduxUser?.resumeUrl && reduxUser.resumeUrl !== "") filled++;
     return Math.round((filled / total) * 100);
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">Loading profile...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
@@ -334,7 +329,7 @@ export function ProfilePage() {
               <Button
                 variant="outline"
                 onClick={handleCancel}
-                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="border-gray-300 dark:border-gray-600"
               >
                 <X className="w-4 h-4 mr-2" />
                 Cancel
@@ -342,7 +337,7 @@ export function ProfilePage() {
               <Button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600"
               >
                 {isSaving ? (
                   <>
@@ -359,8 +354,8 @@ export function ProfilePage() {
             </>
           ) : (
             <Button
-              onClick={handleEnterEditMode}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+              onClick={() => setIsEditing(true)}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600"
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Edit Profile
@@ -370,19 +365,15 @@ export function ProfilePage() {
 
         {/* Messages */}
         {successMessage && (
-          <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/30 rounded-2xl p-4 flex items-center gap-3 animate-fadeIn">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-            <span className="text-emerald-700 dark:text-emerald-400">
-              {successMessage}
-            </span>
+          <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <span className="text-emerald-700">{successMessage}</span>
           </div>
         )}
         {errorMessage && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/30 rounded-2xl p-4 flex items-center gap-3 animate-fadeIn">
-            <X className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-            <span className="text-red-700 dark:text-red-400">
-              {errorMessage}
-            </span>
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
+            <X className="w-5 h-5 text-red-600" />
+            <span className="text-red-700">{errorMessage}</span>
           </div>
         )}
 
@@ -390,33 +381,26 @@ export function ProfilePage() {
         <ProfileProgress user={reduxUser} userType="jobseeker" />
 
         {/* Profile Header Card */}
-        <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800/80 rounded-2xl border shadow-sm overflow-hidden">
           <div className="px-8 pt-8 pb-8">
             <div className="flex flex-col md:flex-row gap-8">
               {/* Avatar Section */}
               <div className="relative group flex-shrink-0">
                 <div
-                  className={`w-32 h-32 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 border-4 border-white dark:border-gray-700 shadow-xl flex items-center justify-center overflow-hidden transition-shadow duration-300 ${
-                    isEditing
-                      ? "cursor-pointer group-hover:shadow-2xl group-hover:shadow-purple-500/20"
-                      : ""
+                  className={`w-32 h-32 rounded-full border-4 border-white dark:border-gray-700 shadow-xl flex-shrink-0 ${
+                    isEditing ? "cursor-pointer" : ""
                   }`}
                   onClick={isEditing ? handleAvatarClick : undefined}
                 >
-                  {avatarPreview ? (
-                    <img
-                      src={avatarPreview}
-                      alt={formData.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-5xl font-semibold text-purple-600 dark:text-purple-400">
-                      {formData.name?.charAt(0)?.toUpperCase() || "?"}
-                    </span>
-                  )}
+                  <OptimizedAvatar 
+                    src={avatarPreview} 
+                    alt={formData.name} 
+                    fallbackText={formData.name?.charAt(0)?.toUpperCase() || "?"}
+                    className="w-full h-full text-5xl"
+                    size={300}
+                  />
                 </div>
 
-                {/* Hidden file input */}
                 <input
                   ref={avatarInputRef}
                   type="file"
@@ -425,26 +409,20 @@ export function ProfilePage() {
                   className="hidden"
                 />
 
-                {/* Edit overlay buttons — theme-matched gradients */}
                 {isEditing && (
                   <div className="absolute -bottom-2 -right-2 flex gap-1.5">
                     <button
                       type="button"
                       onClick={handleAvatarClick}
-                      className="w-9 h-9 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
-                      title="Upload new avatar"
+                      className="w-9 h-9 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full flex items-center justify-center shadow-lg"
                     >
                       <Camera className="w-4 h-4 text-white" />
                     </button>
                     {selectedAvatarFile && (
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveAvatarPreview();
-                        }}
-                        className="w-9 h-9 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 active:scale-95"
-                        title="Revert to original avatar"
+                        onClick={handleRemoveAvatarPreview}
+                        className="w-9 h-9 bg-gradient-to-r from-red-500 to-rose-600 rounded-full flex items-center justify-center shadow-lg"
                       >
                         <Trash2 className="w-4 h-4 text-white" />
                       </button>
@@ -452,18 +430,12 @@ export function ProfilePage() {
                   </div>
                 )}
 
-                {/* Upload hint on hover in edit mode */}
                 {isEditing && (
                   <div
-                    className="absolute inset-0 w-32 h-32 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200 cursor-pointer backdrop-blur-[1px]"
+                    className="absolute inset-0 w-32 h-32 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200 cursor-pointer"
                     onClick={handleAvatarClick}
                   >
-                    <div className="text-center">
-                      <Upload className="w-5 h-5 text-white mx-auto mb-1 drop-shadow-lg" />
-                      <span className="text-white text-xs font-semibold drop-shadow-lg">
-                        Change
-                      </span>
-                    </div>
+                    <Upload className="w-5 h-5 text-white" />
                   </div>
                 )}
               </div>
@@ -477,7 +449,7 @@ export function ProfilePage() {
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        className="text-2xl font-bold mb-2 dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                        className="text-2xl font-bold mb-2"
                         placeholder="Your Name"
                       />
                     ) : (
@@ -485,25 +457,24 @@ export function ProfilePage() {
                         {formData.name || "Your Name"}
                       </h2>
                     )}
-                    <div className="flex items-center gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
                       <MapPin className="w-4 h-4" />
                       <span>{formData.location || "Your Location"}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge
                         variant="outline"
-                        className="text-xs px-3 py-1 border-purple-200 dark:border-purple-700 text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 gap-1.5"
+                        className="text-xs px-3 py-1 border-purple-200 text-purple-700 bg-purple-50 gap-1.5"
                       >
                         <Lock className="w-3 h-3" />
                         <span className="capitalize">{reduxUser?.role}</span>
                       </Badge>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">Role cannot be changed</span>
+                      <span className="text-xs text-gray-400">
+                        Role cannot be changed
+                      </span>
                     </div>
                   </div>
-                  <Badge
-                    variant="primary"
-                    className="text-sm px-4 py-1.5 dark:bg-purple-900/30 dark:text-purple-300"
-                  >
+                  <Badge variant="primary" className="text-sm px-4 py-1.5">
                     {formData.skills.length >= 3 ? "Verified" : "Basic Member"}
                   </Badge>
                 </div>
@@ -513,11 +484,11 @@ export function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Basic Info */}
+          {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Contact Information */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -536,7 +507,6 @@ export function ProfilePage() {
                         name="name"
                         value={formData.name}
                         onChange={handleInputChange}
-                        className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
                       />
                     ) : (
                       <p className="text-gray-900 dark:text-white">
@@ -561,7 +531,6 @@ export function ProfilePage() {
                         name="phone"
                         value={formData.phone}
                         onChange={handleInputChange}
-                        className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
                       />
                     ) : (
                       <p className="text-gray-900 dark:text-white">
@@ -578,7 +547,6 @@ export function ProfilePage() {
                         name="location"
                         value={formData.location}
                         onChange={handleInputChange}
-                        className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
                       />
                     ) : (
                       <p className="text-gray-900 dark:text-white">
@@ -590,9 +558,8 @@ export function ProfilePage() {
               </div>
             </div>
 
-            {/* Professional Information */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <div className="flex items-center gap-2">
                   <Briefcase className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -611,7 +578,6 @@ export function ProfilePage() {
                         name="currentRole"
                         value={formData.currentRole}
                         onChange={handleInputChange}
-                        className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
                         placeholder="e.g., Software Engineer"
                       />
                     ) : (
@@ -629,7 +595,7 @@ export function ProfilePage() {
                         name="experience"
                         value={formData.experience}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:text-white dark:[&>option]:bg-gray-800"
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:text-white"
                       >
                         <option value="">Select Experience</option>
                         <option value="Fresher">Fresher (0 years)</option>
@@ -656,7 +622,7 @@ export function ProfilePage() {
                         name="preferredJobType"
                         value={formData.preferredJobType}
                         onChange={handleInputChange}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:text-white dark:[&>option]:bg-gray-800"
+                        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:text-white"
                       >
                         <option value="full-time">Full-time</option>
                         <option value="part-time">Part-time</option>
@@ -679,7 +645,6 @@ export function ProfilePage() {
                         name="expectedSalary"
                         value={formData.expectedSalary}
                         onChange={handleInputChange}
-                        className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
                         placeholder="e.g., $80,000/year"
                       />
                     ) : (
@@ -700,7 +665,7 @@ export function ProfilePage() {
                       value={formData.bio}
                       onChange={handleInputChange}
                       rows={3}
-                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none dark:text-white dark:placeholder-gray-500"
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none dark:text-white"
                       placeholder="Tell us about yourself..."
                     />
                   ) : (
@@ -713,8 +678,8 @@ export function ProfilePage() {
             </div>
 
             {/* Social Links */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <div className="flex items-center gap-2">
                   <Globe className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   <h3 className="font-semibold text-gray-900 dark:text-white">
@@ -726,7 +691,7 @@ export function ProfilePage() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1">
                       {isEditing ? (
                         <Input
                           placeholder="LinkedIn URL"
@@ -734,14 +699,13 @@ export function ProfilePage() {
                           onChange={(e) =>
                             handleSocialChange("linkedin", e.target.value)
                           }
-                          className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
                         />
                       ) : formData.socialLinks.linkedin ? (
                         <a
                           href={formData.socialLinks.linkedin}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 truncate block"
+                          className="text-gray-600 dark:text-gray-400 hover:text-purple-600 truncate block"
                         >
                           {formData.socialLinks.linkedin}
                         </a>
@@ -754,7 +718,7 @@ export function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Code className="w-5 h-5 text-gray-800 dark:text-gray-300 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1">
                       {isEditing ? (
                         <Input
                           placeholder="GitHub URL"
@@ -762,14 +726,13 @@ export function ProfilePage() {
                           onChange={(e) =>
                             handleSocialChange("github", e.target.value)
                           }
-                          className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
                         />
                       ) : formData.socialLinks.github ? (
                         <a
                           href={formData.socialLinks.github}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 truncate block"
+                          className="text-gray-600 dark:text-gray-400 hover:text-purple-600 truncate block"
                         >
                           {formData.socialLinks.github}
                         </a>
@@ -782,7 +745,7 @@ export function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <ExternalLink className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1">
                       {isEditing ? (
                         <Input
                           placeholder="Portfolio URL"
@@ -790,14 +753,13 @@ export function ProfilePage() {
                           onChange={(e) =>
                             handleSocialChange("portfolio", e.target.value)
                           }
-                          className="dark:bg-gray-800 dark:text-white dark:border-gray-700"
                         />
                       ) : formData.socialLinks.portfolio ? (
                         <a
                           href={formData.socialLinks.portfolio}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 truncate block"
+                          className="text-gray-600 dark:text-gray-400 hover:text-purple-600 truncate block"
                         >
                           {formData.socialLinks.portfolio}
                         </a>
@@ -813,11 +775,11 @@ export function ProfilePage() {
             </div>
           </div>
 
-          {/* Right Column - Sidebar */}
+          {/* Right Column */}
           <div className="space-y-6">
             {/* Skills Section */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Code className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -827,9 +789,8 @@ export function ProfilePage() {
                   </div>
                   {isEditing && !showSkillInput && (
                     <button
-                      type="button"
                       onClick={() => setShowSkillInput(true)}
-                      className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 flex items-center gap-1"
+                      className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 flex items-center gap-1"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       Add Skill
@@ -843,14 +804,13 @@ export function ProfilePage() {
                     <Badge
                       key={skill}
                       variant="primary"
-                      className="text-sm px-3 py-1.5 gap-1 dark:bg-purple-900/30 dark:text-purple-300"
+                      className="text-sm px-3 py-1.5 gap-1"
                     >
                       {skill}
                       {isEditing && (
                         <button
-                          type="button"
                           onClick={() => handleRemoveSkill(skill)}
-                          className="ml-1 text-purple-400 hover:text-red-500 dark:hover:text-red-400"
+                          className="ml-1 text-purple-400 hover:text-red-500"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -878,7 +838,7 @@ export function ProfilePage() {
                         if (e.key === "Enter") handleAddSkill();
                         if (e.key === "Escape") setShowSkillInput(false);
                       }}
-                      className="flex-1 dark:bg-gray-800 dark:text-white dark:border-gray-700"
+                      className="flex-1"
                       autoFocus
                     />
                     <Button size="sm" onClick={handleAddSkill}>
@@ -891,7 +851,6 @@ export function ProfilePage() {
                         setShowSkillInput(false);
                         setNewSkill("");
                       }}
-                      className="dark:border-gray-600 dark:text-gray-300"
                     >
                       Cancel
                     </Button>
@@ -901,8 +860,8 @@ export function ProfilePage() {
             </div>
 
             {/* Profile Completion Card */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-6 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-purple-50/30 to-indigo-50/30 dark:from-purple-900/20 dark:to-indigo-900/20">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-purple-50/30 to-indigo-50/30 dark:from-purple-900/20 dark:to-indigo-900/20">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -910,10 +869,7 @@ export function ProfilePage() {
                       Profile Completion
                     </h3>
                   </div>
-                  <Badge
-                    variant="primary"
-                    className="text-sm dark:bg-purple-900/30 dark:text-purple-300"
-                  >
+                  <Badge variant="primary" className="text-sm">
                     {calculateProfileCompleteness()}%
                   </Badge>
                 </div>
@@ -925,66 +881,34 @@ export function ProfilePage() {
                   showPercentage={false}
                 />
                 <div className="mt-4 space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    {formData.name ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
-                    )}
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Full Name
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {formData.email ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
-                    )}
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Email Address
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {formData.phone ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
-                    )}
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Phone Number
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {formData.location ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
-                    )}
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Location
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {formData.currentRole ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
-                    )}
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Job Title
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {formData.skills.length >= 3 ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
-                    )}
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Skills (min 3)
-                    </span>
-                  </div>
+                  {[
+                    { key: "name", label: "Full Name" },
+                    { key: "email", label: "Email Address" },
+                    { key: "phone", label: "Phone Number" },
+                    { key: "location", label: "Location" },
+                    { key: "currentRole", label: "Job Title" },
+                    { key: "skills", label: "Skills (min 3)", isArray: true },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      {item.isArray ? (
+                        formData.skills.length >= 3 ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+                        )
+                      ) : formData[item.key] ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <Circle className="w-4 h-4 text-gray-300 dark:text-gray-600" />
+                      )}
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

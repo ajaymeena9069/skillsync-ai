@@ -5,14 +5,11 @@ import {
   MapPin,
   Briefcase,
   DollarSign,
-  Clock,
-  Eye,
-  BookmarkPlus,
-  BookmarkCheck,
   CalendarDays,
   Globe,
   Building2,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { Card } from "../components/Card";
 import { Badge } from "../components/Badge";
@@ -21,6 +18,7 @@ import { useJobMatch } from "../hooks/useJobMatch";
 import { ApplyModal } from "../components/ApplyModal";
 import { useApplyForJobMutation } from "../services/applicationApi";
 import { toast } from "sonner";
+import { OptimizedAvatar } from "./common/OptimizedAvatar";
 
 export function JobCard({
   job,
@@ -84,11 +82,41 @@ export function JobCard({
     }
   };
 
+  // ✅ Get recruiterId dynamically from job object
   const handleViewCompany = () => {
-    const recruiterId = job.recruiterId?._id || job.recruiterId;
+    let recruiterId = null;
+    
+    // Check multiple possible locations for recruiterId
+    if (job.recruiterId) {
+      if (typeof job.recruiterId === 'object') {
+        recruiterId = job.recruiterId._id || job.recruiterId.id;
+      } else {
+        recruiterId = job.recruiterId;
+      }
+    } else if (job.recruiter) {
+      if (typeof job.recruiter === 'object') {
+        recruiterId = job.recruiter._id || job.recruiter.id;
+      } else {
+        recruiterId = job.recruiter;
+      }
+    } else if (job.companyId) {
+      if (typeof job.companyId === 'object') {
+        recruiterId = job.companyId._id || job.companyId.id;
+      } else {
+        recruiterId = job.companyId;
+      }
+    }
+    
     if (recruiterId) {
       navigate(`/app/companies/${recruiterId}`);
+    } else {
+      toast.error("Company information not available");
     }
+  };
+
+  // ✅ View job details
+  const handleViewJob = () => {
+    navigate(`/app/jobs/${job._id}`);
   };
 
   const handleApplySubmit = async (data) => {
@@ -110,10 +138,10 @@ export function JobCard({
     return (
       <Card
         hover
-        className="p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-100 dark:border-gray-700/50"
+        className="p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50"
       >
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center shrink-0">
             <Briefcase className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="flex-1 min-w-0">
@@ -121,9 +149,9 @@ export function JobCard({
               {job.title}
             </h4>
             <button
-              onClick={handleViewCompany}
+              onClick={handleViewJob}
               className="text-xs text-gray-500 dark:text-gray-400 truncate hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
-              title="View company profile"
+              title="View job details"
             >
               {job.company}
             </button>
@@ -151,11 +179,11 @@ export function JobCard({
     return (
       <Card
         hover
-        className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-100 dark:border-gray-700/50"
+        className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
               <Briefcase className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
@@ -163,7 +191,7 @@ export function JobCard({
                 {job.title}
               </h3>
               <button
-                onClick={handleViewCompany}
+                onClick={handleViewJob}
                 className="text-sm text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
               >
                 {job.company}
@@ -193,19 +221,28 @@ export function JobCard({
     <>
       <Card
         hover
-        className="p-5 group transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-100 dark:border-gray-700/50"
+        className="p-5 group transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50"
       >
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-start gap-3">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center shrink-0 shadow-sm">
-                <Building2 className="w-7 h-7 text-purple-600 dark:text-purple-400" />
+              <div className="w-14 h-14 rounded-full shadow-sm shrink-0">
+                <OptimizedAvatar 
+                  src={job.recruiterId?.company?.logo} 
+                  alt={job.company} 
+                  fallbackText={job.company?.charAt(0)?.toUpperCase()}
+                  className="w-full h-full"
+                  size={150}
+                />
               </div>
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg hover:text-purple-600 transition-colors">
+                  <button
+                    onClick={handleViewJob}
+                    className="font-semibold text-gray-900 dark:text-white text-lg hover:text-purple-600 transition-colors text-left"
+                  >
                     {job.title}
-                  </h3>
+                  </button>
                   {job.isUrgent && (
                     <Badge variant="danger" size="sm" className="animate-pulse">
                       Urgent
@@ -251,6 +288,12 @@ export function JobCard({
                     <CalendarDays className="w-3.5 h-3.5" /> Posted{" "}
                     {formatTime()}
                   </span>
+                  {(job.applicationCount !== undefined || job.applicationsCount !== undefined) && (
+                    <span className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-900/30 px-2.5 py-0.5 rounded-md border border-purple-100 dark:border-purple-800/30">
+                      <Users className="w-3.5 h-3.5" /> 
+                      {job.applicationCount ?? job.applicationsCount} Applications
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -319,16 +362,15 @@ export function JobCard({
         )}
 
         {showActions && (
-          <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
             <div className="flex gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                onClick={handleViewCompany}
+                onClick={handleViewJob}
                 className="text-sm"
               >
-                <Building2 className="w-3.5 h-3.5 mr-1" />
-                View Company
+                View Details
               </Button>
             </div>
             <Button

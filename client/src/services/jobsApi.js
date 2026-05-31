@@ -31,7 +31,7 @@ export const jobsApi = baseApi.injectEndpoints({
         method: "POST",
         body: jobData,
       }),
-      invalidatesTags: ["Jobs", "MyJobs", "companyStats"], // Invalidate company stats to update job count
+      invalidatesTags: ["Jobs", "MyJobs", "CompanyStats", "DashboardStats", "Analytics", "PublicStats"], // Invalidate UI stats to update job count
     }),
 
     // Update job
@@ -54,7 +54,7 @@ export const jobsApi = baseApi.injectEndpoints({
         url: `/jobs/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Jobs", "MyJobs", "companyStats"], // Invalidate company stats to update job count
+      invalidatesTags: ["Jobs", "MyJobs", "CompanyStats", "DashboardStats", "Analytics", "PublicStats"], // Invalidate UI stats to update job count
     }),
   }),
 });

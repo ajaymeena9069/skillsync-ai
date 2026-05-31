@@ -1,3 +1,6 @@
+// client/src/pages/marketing/ContactPage.jsx
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   Mail,
   Phone,
@@ -11,13 +14,19 @@ import {
   HelpCircle,
   Briefcase,
   Users,
+  Sparkles,
+  CheckCircle2,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Input } from "../../components/Input";
 
-export function ContactPage({ onGetStarted }) {
+export function ContactPage() {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useSelector((state) => state.auth);
+
   const contactMethods = [
     {
       icon: Mail,
@@ -25,7 +34,8 @@ export function ContactPage({ onGetStarted }) {
       description: "Get in touch for questions or collaboration",
       value: "contact@skillsync.dev",
       action: "Send Email",
-      color: "from-primary to-primary/80",
+      color: "from-purple-500 to-indigo-500",
+      link: "mailto:contact@skillsync.dev",
     },
     {
       icon: GitBranch,
@@ -33,7 +43,8 @@ export function ContactPage({ onGetStarted }) {
       description: "View source code and contribute",
       value: "github.com/skillsync-ai",
       action: "View Repository",
-      color: "from-secondary to-secondary/80",
+      color: "from-gray-600 to-gray-800",
+      link: "https://github.com",
     },
     {
       icon: Link,
@@ -41,7 +52,8 @@ export function ContactPage({ onGetStarted }) {
       description: "Connect for professional networking",
       value: "Connect on LinkedIn",
       action: "View Profile",
-      color: "from-success to-success/80",
+      color: "from-blue-500 to-cyan-500",
+      link: "https://linkedin.com",
     },
   ];
 
@@ -91,58 +103,77 @@ export function ContactPage({ onGetStarted }) {
   ];
 
   return (
-    <div className="min-h-screen py-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 relative overflow-hidden">
+      {/* Ambient background for light mode glass effect */}
+      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] bg-purple-200/40 dark:bg-purple-900/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+      <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-indigo-200/40 dark:bg-indigo-900/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 z-10">
+        {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <Badge variant="primary" className="mb-6 px-4 py-2">
-            <MessageSquare className="w-4 h-4 mr-1" />
+          <Badge variant="primary" className="mb-6 px-4 py-2 text-sm gap-2">
+            <MessageSquare className="w-4 h-4" />
             Contact Us
           </Badge>
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
             Get in
             <br />
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
               Touch
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground">
+          <p className="text-lg text-gray-600 dark:text-gray-400">
             Questions about the project? Want to collaborate? Reach out through
             any of these channels.
           </p>
         </div>
 
+        {/* Contact Methods */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
           {contactMethods.map((method, i) => {
             const Icon = method.icon;
             return (
-              <Card key={i} hover className="p-6 text-center">
+              <Card
+                key={i}
+                className="p-6 text-center hover:shadow-2xl transition-all duration-300 border border-white/60 dark:border-purple-900/50 bg-white/60 dark:bg-gray-900/50 backdrop-blur-2xl hover:-translate-y-1 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none"
+              >
                 <div
-                  className={`w-16 h-16 bg-gradient-to-br ${method.color} rounded-2xl flex items-center justify-center mx-auto mb-4`}
+                  className={`w-14 h-14 rounded-xl bg-gradient-to-r ${method.color} flex items-center justify-center mx-auto mb-4 shadow-md`}
                 >
-                  <Icon className="w-8 h-8 text-white" />
+                  <Icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">{method.title}</h3>
-                <p className="text-sm text-muted-foreground mb-3">
+                <h3 className="font-semibold text-gray-900 dark:text-white text-lg mb-2">
+                  {method.title}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                   {method.description}
                 </p>
-                <p className="font-medium mb-4">{method.value}</p>
-                <Button variant="outline" size="sm" className="w-full">
-                  {method.action}
-                </Button>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-4">
+                  {method.value}
+                </p>
+                <a href={method.link} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="w-full">
+                    {method.action}
+                  </Button>
+                </a>
               </Card>
             );
           })}
         </div>
 
+        {/* Contact Form & Info */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
+          {/* Contact Form */}
           <div>
-            <h2 className="text-3xl font-bold mb-4">Send a Message</h2>
-            <p className="text-muted-foreground mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
+              Send a Message
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-8">
               Have questions or feedback? Fill out the form and I'll get back to
               you.
             </p>
 
-            <form className="space-y-6">
+            <form className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input label="First Name" placeholder="John" required />
                 <Input label="Last Name" placeholder="Doe" required />
@@ -162,10 +193,10 @@ export function ContactPage({ onGetStarted }) {
               />
 
               <div>
-                <label className="block mb-2 text-sm text-foreground/80">
+                <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                   Inquiry Type
                 </label>
-                <select className="w-full px-4 py-2.5 bg-input-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <select className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500">
                   <option>Technical Question</option>
                   <option>Feature Request</option>
                   <option>Bug Report</option>
@@ -174,56 +205,55 @@ export function ContactPage({ onGetStarted }) {
                 </select>
               </div>
 
-              <div>
-                <label className="block mb-2 text-sm text-foreground/80">
-                  Subject
-                </label>
-                <Input placeholder="How can we help?" required />
-              </div>
+              <Input label="Subject" placeholder="How can we help?" required />
 
               <div>
-                <label className="block mb-2 text-sm text-foreground/80">
+                <label className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                   Message
                 </label>
                 <textarea
-                  className="w-full px-4 py-2.5 bg-input-background border border-border rounded-xl
-                    focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
-                    transition-all duration-200 min-h-32"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all min-h-32"
                   placeholder="Tell us more about your inquiry..."
                   required
                 />
               </div>
 
-              <Button size="lg" className="w-full">
+              <Button size="lg" className="w-full gap-2">
                 Send Message
-                <Send className="w-5 h-5 ml-2" />
+                <Send className="w-4 h-4" />
               </Button>
 
-              <p className="text-sm text-muted-foreground text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-500 text-center">
                 I'll respond to inquiries as soon as possible
               </p>
             </form>
           </div>
 
+          {/* Right Column */}
           <div className="space-y-6">
-            <Card className="p-6">
-              <h3 className="font-semibold text-lg mb-4">Inquiry Types</h3>
+            {/* Inquiry Types */}
+            <Card className="p-5 border border-white/60 dark:border-purple-900/50 bg-white/60 dark:bg-gray-900/50 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
+                Inquiry Types
+              </h3>
               <div className="space-y-4">
                 {inquiryTypes.map((type, i) => {
                   const Icon = type.icon;
                   return (
-                    <div key={i} className="flex gap-4">
-                      <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-6 h-6 text-primary" />
+                    <div key={i} className="flex gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
-                        <h4 className="font-medium mb-1">{type.title}</h4>
-                        <p className="text-sm text-muted-foreground mb-1">
+                        <h4 className="font-medium text-gray-900 dark:text-white text-sm">
+                          {type.title}
+                        </h4>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                           {type.description}
                         </p>
                         <a
                           href={`mailto:${type.email}`}
-                          className="text-sm text-primary hover:underline"
+                          className="text-xs text-purple-600 hover:text-purple-700 dark:text-purple-400"
                         >
                           {type.email}
                         </a>
@@ -234,92 +264,106 @@ export function ContactPage({ onGetStarted }) {
               </div>
             </Card>
 
-            <Card className="p-6 bg-gradient-to-br from-primary/10 to-secondary/10">
-              <h3 className="font-semibold text-lg mb-2">Project Repository</h3>
-              <p className="text-muted-foreground mb-4 text-sm">
+            {/* GitHub Card */}
+            <Card className="p-5 relative overflow-hidden border border-purple-100 dark:border-purple-900/50 bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl -z-10" />
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                Project Repository
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 This is an open-source portfolio project. View the code,
                 documentation, and contribute on GitHub.
               </p>
-              <Button variant="outline" className="w-full">
-                <GitBranch className="w-4 h-4 mr-2" />
-                View on GitHub
-              </Button>
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" className="w-full gap-2">
+                  <GitBranch className="w-4 h-4" />
+                  View on GitHub
+                </Button>
+              </a>
             </Card>
 
-            <Card className="p-6">
-              <h3 className="font-semibold text-lg mb-4">Follow Us</h3>
+            {/* Social Links */}
+            <Card className="p-5 border border-white/60 dark:border-purple-900/50 bg-white/60 dark:bg-gray-900/50 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
+                Follow Us
+              </h3>
               <div className="flex gap-3">
                 <a
                   href="#"
-                  className="w-12 h-12 bg-accent hover:bg-primary hover:text-primary-foreground rounded-xl flex items-center justify-center transition-colors"
+                  className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:text-purple-600 transition-all"
                 >
-                  <Share2 className="w-5 h-5" />
+                  <Share2 className="w-4 h-4" />
                 </a>
                 <a
                   href="#"
-                  className="w-12 h-12 bg-accent hover:bg-primary hover:text-primary-foreground rounded-xl flex items-center justify-center transition-colors"
+                  className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:text-purple-600 transition-all"
                 >
-                  <Link className="w-5 h-5" />
+                  <Link className="w-4 h-4" />
                 </a>
                 <a
                   href="#"
-                  className="w-12 h-12 bg-accent hover:bg-primary hover:text-primary-foreground rounded-xl flex items-center justify-center transition-colors"
+                  className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:text-purple-600 transition-all"
                 >
-                  <GitBranch className="w-5 h-5" />
+                  <GitBranch className="w-4 h-4" />
                 </a>
               </div>
-            </Card>
-
-            <Card className="p-6 bg-gradient-to-br from-primary/10 to-secondary/10">
-              <h3 className="font-semibold text-lg mb-2">
-                Need Immediate Help?
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Check out our help center for instant answers to common
-                questions.
-              </p>
-              <Button variant="outline" className="w-full">
-                Visit Help Center
-              </Button>
             </Card>
           </div>
         </div>
 
+        {/* FAQ Section */}
         <div className="mb-20">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
               Common Questions
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-lg text-gray-600 dark:text-gray-400">
               Quick answers to questions you might have
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto space-y-4">
             {faqs.map((faq, i) => (
-              <Card key={i} className="p-6">
-                <h3 className="font-semibold text-lg mb-2">{faq.question}</h3>
-                <p className="text-muted-foreground">{faq.answer}</p>
+              <Card key={i} className="p-5 border border-white/60 dark:border-purple-900/50 bg-white/60 dark:bg-gray-900/50 backdrop-blur-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                  {faq.question}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {faq.answer}
+                </p>
               </Card>
             ))}
           </div>
         </div>
 
+        {/* CTA Section */}
         <div className="mt-20">
-          <Card className="p-12 bg-gradient-to-br from-primary via-primary/90 to-secondary text-white text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Try the Platform
-            </h2>
-            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-              Experience AI-powered career matching and skill analysis
-            </p>
-            <Button
-              size="lg"
-              className="bg-white text-primary hover:bg-white/90"
-              onClick={onGetStarted}
-            >
-              Get Started Free
-            </Button>
+          <Card className="relative overflow-hidden p-12 text-center border border-purple-100 dark:border-purple-900/50 shadow-xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl">
+            {/* Background glowing orbs */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -z-10" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -z-10" />
+
+            <div className="max-w-2xl mx-auto relative z-10">
+              <h2 className="text-2xl md:text-3xl font-bold mb-3 text-gray-900 dark:text-white">
+                Still Need Assistance?
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-8">
+                If you couldn't find the answers you're looking for, our support team is just a message away.
+              </p>
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  size="lg"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-purple-500/25 border-transparent gap-2"
+                >
+                  <MessageSquare className="w-5 h-5 mr-1" /> Send Us a Message
+                </Button>
+              </div>
+            </div>
           </Card>
         </div>
       </div>

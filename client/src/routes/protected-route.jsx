@@ -1,9 +1,9 @@
 import { Navigate } from "react-router-dom";
-import { AUTH_STORAGE_KEY } from "../features/auth/authConstants";
+import { TOKEN_KEY } from "../features/auth/authConstants";
 import { getUser } from "../features/auth/authUtils";
 
 export function ProtectedRoute({ children, requiredRole }) {
-  const token = localStorage.getItem(AUTH_STORAGE_KEY);
+  const token = localStorage.getItem(TOKEN_KEY);
   const user = getUser();
 
   // Check if authenticated

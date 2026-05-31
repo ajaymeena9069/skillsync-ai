@@ -1,5 +1,7 @@
 // client/src/pages/SkillGapPage.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   TrendingUp,
   Target,
@@ -8,91 +10,38 @@ import {
   FileText,
   ExternalLink,
   CheckCircle2,
-  Circle,
   Sparkles,
   ChevronRight,
-  Award,
   Clock,
   AlertCircle,
   Zap,
+  Loader2,
+  RefreshCw,
+  Upload,
 } from "lucide-react";
-import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
+import { Card } from "../../components/Card";
+import { PageLoader } from "../../components/PageLoader";
 import { Badge } from "../../components/Badge";
 import { ProgressBar } from "../../components/ProgressBar";
+import { useLazyGetSkillGapAnalysisQuery } from "../../services/skillGapApi";
 
 export function SkillGapPage() {
+  const navigate = useNavigate();
   const [selectedSkill, setSelectedSkill] = useState(null);
 
-  const currentSkills = [
-    { name: "React", level: 90, category: "Frontend" },
-    { name: "TypeScript", level: 85, category: "Languages" },
-    { name: "Node.js", level: 75, category: "Backend" },
-    { name: "CSS/Tailwind", level: 80, category: "Frontend" },
-    { name: "Git", level: 85, category: "Tools" },
-    { name: "JavaScript", level: 95, category: "Languages" },
-  ];
+  const resumeSkills = useSelector((state) => state.resume.parsedSkills);
+  const hasResume = resumeSkills && resumeSkills.length > 0;
 
-  const missingSkills = [
-    { name: "AWS", importance: "High", demand: 95, category: "Cloud" },
-    { name: "Docker", importance: "High", demand: 90, category: "DevOps" },
-    { name: "GraphQL", importance: "Medium", demand: 75, category: "Backend" },
-    {
-      name: "Kubernetes",
-      importance: "Medium",
-      demand: 70,
-      category: "DevOps",
-    },
-    { name: "MongoDB", importance: "Low", demand: 65, category: "Database" },
-  ];
+  const [triggerAnalysis, { data: analysisData, isLoading, error, isFetching }] =
+    useLazyGetSkillGapAnalysisQuery();
 
-  const recommendations = [
-    {
-      skill: "AWS",
-      resources: [
-        {
-          type: "Course",
-          title: "AWS Certified Solutions Architect",
-          platform: "Udemy",
-          duration: "12 hours",
-        },
-        {
-          type: "Article",
-          title: "AWS Fundamentals Guide",
-          platform: "AWS Docs",
-          duration: "2 hours",
-        },
-        {
-          type: "Video",
-          title: "AWS Complete Tutorial",
-          platform: "YouTube",
-          duration: "4 hours",
-        },
-      ],
-    },
-    {
-      skill: "Docker",
-      resources: [
-        {
-          type: "Course",
-          title: "Docker Mastery",
-          platform: "Udemy",
-          duration: "8 hours",
-        },
-        {
-          type: "Article",
-          title: "Docker Best Practices",
-          platform: "Docker Docs",
-          duration: "1 hour",
-        },
-      ],
-    },
-  ];
-
-  const marketReadiness = Math.round(
-    (currentSkills.length / (currentSkills.length + missingSkills.length)) *
-      100,
-  );
+  const analysis = analysisData?.data;
+  const currentSkills = analysis?.currentSkills || [];
+  const missingSkills = analysis?.missingSkills || [];
+  const recommendations = analysis?.recommendations || [];
+  const marketReadiness = analysis?.marketReadiness || 0;
+  const summary = analysis?.summary || "";
 
   const getImportanceColor = (importance) => {
     switch (importance) {
@@ -105,6 +54,153 @@ export function SkillGapPage() {
     }
   };
 
+  const handleAnalyze = () => {
+    triggerAnalysis();
+  };
+
+  // No resume uploaded - show upload prompt
+  if (!hasResume) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-sm mb-4 dark:bg-purple-900/30 dark:text-purple-400">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered Analysis</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3 dark:text-white">
+              Skill Gap{" "}
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Analysis
+              </span>
+            </h1>
+          </div>
+
+          <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-8 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Upload className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Upload Your Resume First
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              We need your resume to analyze your skills and identify gaps.
+              Upload your resume to get started with AI-powered skill gap
+              analysis.
+            </p>
+            <Button
+              onClick={() => navigate("/app/resume")}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2 px-6"
+            >
+              <Upload className="w-4 h-4" />
+              Go to Resume Page
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Has resume but hasn't triggered analysis yet
+  if (!analysis && !isLoading && !error) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-sm mb-4 dark:bg-purple-900/30 dark:text-purple-400">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered Analysis</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3 dark:text-white">
+              Skill Gap{" "}
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Analysis
+              </span>
+            </h1>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto dark:text-gray-400">
+              Identify and bridge the gaps between your current skills and
+              market demands
+            </p>
+          </div>
+
+          <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-8 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Zap className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Ready to Analyze Your Skills
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-2">
+              We found{" "}
+              <span className="font-semibold text-purple-600 dark:text-purple-400">
+                {resumeSkills.length} skills
+              </span>{" "}
+              from your resume.
+            </p>
+            <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
+              Click below to compare your skills against active job listings
+              and get personalized recommendations.
+            </p>
+            <Button
+              onClick={handleAnalyze}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2 px-6 shadow-md hover:shadow-lg transition-all"
+            >
+              <Sparkles className="w-4 h-4" />
+              Run AI Skill Gap Analysis
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (isLoading || isFetching) {
+    return <PageLoader />;
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-600 text-sm mb-4 dark:bg-purple-900/30 dark:text-purple-400">
+              <Sparkles className="w-4 h-4" />
+              <span>AI-Powered Analysis</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3 dark:text-white">
+              Skill Gap{" "}
+              <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Analysis
+              </span>
+            </h1>
+          </div>
+
+          <div className="max-w-lg mx-auto bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-8 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Analysis Failed
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              {error?.data?.message || "Something went wrong. Please try again."}
+            </p>
+            <Button
+              onClick={handleAnalyze}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white gap-2 px-6"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Analysis results
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -121,9 +217,18 @@ export function SkillGapPage() {
             </span>
           </h1>
           <p className="text-gray-500 text-lg max-w-2xl mx-auto dark:text-gray-400">
-            Identify and bridge the gaps between your current skills and market
-            demands
+            {summary ||
+              "Identify and bridge the gaps between your current skills and market demands"}
           </p>
+          <Button
+            onClick={handleAnalyze}
+            variant="outline"
+            size="sm"
+            className="mt-3 gap-2 border-gray-200 dark:border-gray-700 dark:text-gray-300"
+          >
+            <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} />
+            Re-analyze
+          </Button>
         </div>
 
         {/* Stats Cards */}
@@ -184,7 +289,7 @@ export function SkillGapPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Current Skills Card */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 shadow-sm overflow-hidden dark:bg-gray-800/80 dark:border-gray-700/50">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 dark:from-emerald-950/20 dark:to-teal-950/20">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-emerald-50/30 to-teal-50/30 dark:from-emerald-950/20 dark:to-teal-950/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center shadow-md">
@@ -205,44 +310,50 @@ export function SkillGapPage() {
               </div>
             </div>
             <div className="p-6 space-y-5">
-              {currentSkills.map((skill, index) => (
-                <div
-                  key={skill.name}
-                  className="group animate-in fade-in slide-in-from-bottom duration-500"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></div>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {skill.name}
-                      </span>
+              {currentSkills.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                  No matching skills found
+                </p>
+              ) : (
+                currentSkills.map((skill, index) => (
+                  <div
+                    key={skill.name}
+                    className="group animate-in fade-in slide-in-from-bottom duration-500"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {skill.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="default"
+                          className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                        >
+                          {skill.category}
+                        </Badge>
+                        <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                          {skill.level}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="default"
-                        className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                      >
-                        {skill.category}
-                      </Badge>
-                      <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                        {skill.level}%
-                      </span>
-                    </div>
+                    <ProgressBar
+                      value={skill.level}
+                      showPercentage={false}
+                      variant="success"
+                    />
                   </div>
-                  <ProgressBar
-                    value={skill.level}
-                    showPercentage={false}
-                    variant="success"
-                  />
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           {/* Skills Gap Card */}
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 shadow-sm overflow-hidden dark:bg-gray-800/80 dark:border-gray-700/50">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/20">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-amber-50/30 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/20">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-center shadow-md">
@@ -263,124 +374,152 @@ export function SkillGapPage() {
               </div>
             </div>
             <div className="p-6 space-y-4">
-              {missingSkills.map((skill, index) => (
-                <div
-                  key={skill.name}
-                  className="group cursor-pointer"
-                  onClick={() => setSelectedSkill(skill.name)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400"></div>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {skill.name}
-                      </span>
+              {missingSkills.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                  No skill gaps found — great job!
+                </p>
+              ) : (
+                missingSkills.map((skill) => (
+                  <div
+                    key={skill.name}
+                    className="group cursor-pointer"
+                    onClick={() => setSelectedSkill(skill.name)}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400"></div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {skill.name}
+                        </span>
+                      </div>
+                      <Badge
+                        className={`bg-gradient-to-r ${getImportanceColor(skill.importance)} text-white text-xs px-2 py-1`}
+                      >
+                        {skill.importance} Priority
+                      </Badge>
                     </div>
-                    <Badge
-                      className={`bg-gradient-to-r ${getImportanceColor(skill.importance)} text-white text-xs px-2 py-1`}
-                    >
-                      {skill.importance} Priority
-                    </Badge>
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span>{skill.category}</span>
+                      <span>Market Demand: {skill.demand}%</span>
+                    </div>
+                    <ProgressBar
+                      value={skill.demand}
+                      showPercentage={false}
+                      variant="warning"
+                    />
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
-                    <span>{skill.category}</span>
-                    <span>Market Demand: {skill.demand}%</span>
-                  </div>
-                  <ProgressBar
-                    value={skill.demand}
-                    showPercentage={false}
-                    variant="warning"
-                  />
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>
 
         {/* Learning Resources Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 shadow-sm overflow-hidden dark:bg-gray-800/80 dark:border-gray-700/50">
-          <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-blue-50/30 to-cyan-50/30 dark:from-blue-950/20 dark:to-cyan-950/20">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 flex items-center justify-center shadow-md">
-                <BookOpen className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Recommended Learning Resources
-                </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Curated courses and materials to bridge your skill gaps
-                </p>
+        {recommendations.length > 0 && (
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 shadow-sm overflow-hidden dark:bg-gray-800/80 dark:border-gray-700/50">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-blue-50/30 to-cyan-50/30 dark:from-blue-950/20 dark:to-cyan-950/20">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 flex items-center justify-center shadow-md">
+                  <BookOpen className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Recommended Learning Resources
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Curated courses and materials to bridge your skill gaps
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="p-6 space-y-8">
-            {recommendations.map((rec, idx) => (
-              <div key={rec.skill} className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <div className="p-6 space-y-8">
+              {recommendations.map((rec) => (
+                <div key={rec.skill} className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <Target className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                      {rec.skill}
+                    </h3>
+                    <Badge variant="primary" className="text-xs">
+                      Focus Area
+                    </Badge>
                   </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-                    {rec.skill}
-                  </h3>
-                  <Badge variant="primary" className="text-xs">
-                    Focus Area
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {rec.resources.map((resource, i) => (
-                    <div
-                      key={i}
-                      className="group bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 hover:-translate-y-1"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center flex-shrink-0">
-                          {resource.type === "Course" && (
-                            <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                          )}
-                          {resource.type === "Video" && (
-                            <Video className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                          )}
-                          {resource.type === "Article" && (
-                            <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <Badge
-                            variant="primary"
-                            className="mb-2 text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400"
-                          >
-                            {resource.type}
-                          </Badge>
-                          <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1 line-clamp-2">
-                            {resource.title}
-                          </h4>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {resource.platform}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Clock className="w-3 h-3 text-gray-400 dark:text-gray-500" />
-                            <p className="text-xs text-gray-400 dark:text-gray-500">
-                              {resource.duration}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {rec.resources.map((resource, i) => (
+                      <div
+                        key={i}
+                        className="group bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-300 hover:-translate-y-1"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center flex-shrink-0">
+                            {resource.type === "Course" && (
+                              <BookOpen className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                            )}
+                            {resource.type === "Video" && (
+                              <Video className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            )}
+                            {(resource.type === "Article" ||
+                              resource.type === "Practice") && (
+                              <FileText className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Badge
+                              variant="primary"
+                              className="mb-2 text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400"
+                            >
+                              {resource.type}
+                            </Badge>
+                            <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1 line-clamp-2">
+                              {resource.title}
+                            </h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {resource.platform}
                             </p>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Clock className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                              <p className="text-xs text-gray-400 dark:text-gray-500">
+                                {resource.duration}
+                              </p>
+                            </div>
                           </div>
                         </div>
+                        {resource.url ? (
+                          <a
+                            href={resource.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block mt-3"
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full gap-1 border-gray-200 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                            >
+                              Start Learning{" "}
+                              <ExternalLink className="w-3 h-3" />
+                            </Button>
+                          </a>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full mt-3 gap-1 border-gray-200 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                          >
+                            Start Learning{" "}
+                            <ExternalLink className="w-3 h-3" />
+                          </Button>
+                        )}
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full mt-3 gap-1 border-gray-200 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20"
-                      >
-                        Start Learning <ExternalLink className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* AI Roadmap CTA */}
         <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 relative overflow-hidden shadow-lg">
@@ -396,12 +535,15 @@ export function SkillGapPage() {
                   Ready to Start Learning?
                 </h3>
                 <p className="text-white/90 max-w-md">
-                  We've created a personalized 30-day roadmap to help you master
-                  these skills and accelerate your career.
+                  We've created a personalized 30-day roadmap to help you
+                  master these skills and accelerate your career.
                 </p>
               </div>
             </div>
-            <Button className="bg-white text-purple-600 hover:bg-gray-100 shadow-lg hover:shadow-xl transition-all px-6 gap-2">
+            <Button
+              onClick={() => navigate("/app/roadmap")}
+              className="bg-white text-purple-600 hover:bg-gray-100 shadow-lg hover:shadow-xl transition-all px-6 gap-2"
+            >
               View AI Roadmap <ChevronRight className="w-4 h-4" />
             </Button>
           </div>

@@ -1,29 +1,16 @@
 // backend/src/controllers/companyController.js
-import {
-  uploadToCloudinary,
-  deleteFromCloudinary,
-  getCloudinaryFolder,
-} from "../middleware/uploadMiddleware.js";
 import User from "../models/User.js";
 import Job from "../models/Job.js";
 import Application from "../models/Application.js";
+import fs from "fs";
 
-// ✅ Helper function to clean company data (remove nesting)
-const cleanCompanyData = (companyData) => {
-  if (!companyData) return null;
+// ✅ Helper - Clean company data
+const cleanCompany = (company) => {
+  if (!company || typeof company !== "object") return null;
 
-  if (typeof companyData !== "object") return null;
-
-  // Handle nested company object (company.company)
-  let cleaned = companyData;
+  let cleaned = company;
   while (cleaned.company && typeof cleaned.company === "object") {
     cleaned = cleaned.company;
-  }
-
-  // Remove user wrapper if present
-  if (cleaned.user && typeof cleaned.user === "object") {
-    const { user, ...rest } = cleaned;
-    cleaned = rest;
   }
 
   return {
@@ -50,25 +37,30 @@ const cleanCompanyData = (companyData) => {
   };
 };
 
-// Helper function - Check if company profile is complete
-const checkCompanyCompleteness = (company) => {
+// ✅ Helper - Check if company profile is complete
+const isCompanyComplete = (company) => {
   if (!company) return false;
 
-  const requiredFields = ["name", "email", "phone", "location", "industry"];
-  const hasRequired = requiredFields.every(
-    (field) => company[field] && company[field].toString().trim() !== "",
+  const required = ["name", "email", "phone", "location", "industry"];
+  const hasRequired = required.every(
+    (field) => company[field] && company[field].trim(),
   );
   const hasDescription =
     company.description && company.description.length >= 50;
 
-  // ✅ Return boolean, not string
   return hasRequired && hasDescription;
 };
 
-// Get public company profile (accessible by any authenticated user)
+// ==================== PUBLIC COMPANY PROFILE (For Job Seekers) ====================
+
 export const getPublicCompanyProfile = async (req, res) => {
   try {
     const { recruiterId } = req.params;
+
+    console.log(
+      "Fetching public company profile for recruiterId:",
+      recruiterId,
+    );
 
     const recruiter = await User.findById(recruiterId).select(
       "name company isCompanyComplete",
@@ -81,7 +73,7 @@ export const getPublicCompanyProfile = async (req, res) => {
       });
     }
 
-    const cleanedCompany = cleanCompanyData(recruiter.company);
+    const cleanedCompany = cleanCompany(recruiter.company);
 
     res.json({
       success: true,
@@ -114,22 +106,17 @@ export const getPublicCompanyProfile = async (req, res) => {
   }
 };
 
-// Get company profile
+// ==================== COMPANY PROFILE (For Recruiters) ====================
+
 export const getCompanyProfile = async (req, res) => {
   try {
     if (req.user.role !== "recruiter") {
-      return res.status(403).json({
-        success: false,
-        message: "Only recruiters can access company profile",
-      });
+      return res.status(403).json({ success: false, message: "Access denied" });
     }
 
     const user = await User.findById(req.user._id).select(
       "name email phone avatar company isCompanyComplete",
     );
-
-    // ✅ Clean company data before sending
-    const cleanedCompany = cleanCompanyData(user.company);
 
     res.json({
       success: true,
@@ -140,175 +127,111 @@ export const getCompanyProfile = async (req, res) => {
           phone: user.phone || "",
           avatar: user.avatar || "",
         },
-        company: cleanedCompany || {
-          name: "",
-          logo: "",
-          logoPublicId: "",
-          email: "",
-          phone: "",
-          website: "",
-          location: "",
-          founded: "",
-          size: "",
-          industry: "",
-          description: "",
-          mission: "",
-          vision: "",
-          socialLinks: { linkedin: "", twitter: "", github: "" },
-          benefits: [],
-          culture: "",
-        },
+        company: cleanCompany(user.company) || {},
         isComplete: user.isCompanyComplete || false,
       },
     });
   } catch (error) {
-    console.error("Get company profile error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Update company profile
 export const updateCompanyProfile = async (req, res) => {
   try {
     if (req.user.role !== "recruiter") {
-      return res.status(403).json({
-        success: false,
-        message: "Only recruiters can update company profile",
-      });
+      return res.status(403).json({ success: false, message: "Access denied" });
     }
 
-    let companyData = req.body;
-
-    // ✅ Clean incoming company data
-    companyData = cleanCompanyData(companyData) || companyData;
-
-    // Get current user to preserve existing fields
     const currentUser = await User.findById(req.user._id);
-    const currentCompany = cleanCompanyData(currentUser.company) || {};
+    const currentCompany = cleanCompany(currentUser.company) || {};
+    const newData = req.body;
 
-    // Merge new data with existing data
     const mergedCompany = {
-      name: companyData.name || currentCompany.name || "",
-      logo: companyData.logo || currentCompany.logo || "",
-      logoPublicId:
-        companyData.logoPublicId || currentCompany.logoPublicId || "",
-      email: companyData.email || currentCompany.email || "",
-      phone: companyData.phone || currentCompany.phone || "",
-      website: companyData.website || currentCompany.website || "",
-      location: companyData.location || currentCompany.location || "",
-      founded: companyData.founded || currentCompany.founded || "",
-      size: companyData.size || currentCompany.size || "",
-      industry: companyData.industry || currentCompany.industry || "",
-      description: companyData.description || currentCompany.description || "",
-      mission: companyData.mission || currentCompany.mission || "",
-      vision: companyData.vision || currentCompany.vision || "",
+      name: newData.name || currentCompany.name,
+      logo: newData.logo || currentCompany.logo,
+      logoPublicId: newData.logoPublicId || currentCompany.logoPublicId,
+      email: newData.email || currentCompany.email,
+      phone: newData.phone || currentCompany.phone,
+      website: newData.website || currentCompany.website,
+      location: newData.location || currentCompany.location,
+      founded: newData.founded || currentCompany.founded,
+      size: newData.size || currentCompany.size,
+      industry: newData.industry || currentCompany.industry,
+      description: newData.description || currentCompany.description,
+      mission: newData.mission || currentCompany.mission,
+      vision: newData.vision || currentCompany.vision,
       socialLinks: {
         linkedin:
-          companyData.socialLinks?.linkedin ||
-          currentCompany.socialLinks?.linkedin ||
-          "",
+          newData.socialLinks?.linkedin || currentCompany.socialLinks?.linkedin,
         twitter:
-          companyData.socialLinks?.twitter ||
-          currentCompany.socialLinks?.twitter ||
-          "",
+          newData.socialLinks?.twitter || currentCompany.socialLinks?.twitter,
         github:
-          companyData.socialLinks?.github ||
-          currentCompany.socialLinks?.github ||
-          "",
+          newData.socialLinks?.github || currentCompany.socialLinks?.github,
       },
-      benefits: companyData.benefits || currentCompany.benefits || [],
-      culture: companyData.culture || currentCompany.culture || "",
+      benefits: newData.benefits || currentCompany.benefits,
+      culture: newData.culture || currentCompany.culture,
     };
 
-    // ✅ Check if company profile is complete - returns boolean, not string
-    const isComplete = checkCompanyCompleteness(mergedCompany);
+    const complete = isCompanyComplete(mergedCompany);
 
-    // ✅ Update - isCompanyComplete should be boolean, not string
     const user = await User.findByIdAndUpdate(
       req.user._id,
       {
         $set: {
           company: mergedCompany,
-          isCompanyComplete: isComplete, // ✅ boolean value
+          isCompanyComplete: complete,
         },
       },
-      { new: true, runValidators: false },
-    ).select("company isCompanyComplete name email phone avatar");
-
-    // ✅ Clean response data
-    const cleanedResponseCompany = cleanCompanyData(user.company);
+      { new: true },
+    );
 
     res.json({
       success: true,
       data: {
-        company: cleanedResponseCompany,
-        user: {
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          avatar: user.avatar,
-        },
+        company: cleanCompany(user.company),
+        isComplete: user.isCompanyComplete,
       },
-      isComplete: user.isCompanyComplete,
-      message: isComplete
-        ? "Company profile completed successfully! 🎉"
-        : "Company profile updated successfully",
+      message: complete
+        ? "Company profile completed! 🎉"
+        : "Company profile updated",
     });
   } catch (error) {
-    console.error("Update company profile error:", error);
+    console.error("updateCompanyProfile ERROR:", error);
+    fs.writeFileSync("update_error.log", error.stack || error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Upload company logo
 export const uploadCompanyLogo = async (req, res) => {
   try {
     if (req.user.role !== "recruiter") {
-      return res.status(403).json({
-        success: false,
-        message: "Only recruiters can upload company logo",
-      });
+      return res.status(403).json({ success: false, message: "Access denied" });
     }
 
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
     }
 
-    // Get current user to delete old logo if exists
     const currentUser = await User.findById(req.user._id);
-    const oldLogoPublicId = currentUser.company?.logoPublicId;
+    const oldLogoId = currentUser.company?.logoPublicId;
 
-    // Delete old logo from Cloudinary if exists
-    if (oldLogoPublicId) {
-      try {
-        await deleteFromCloudinary(oldLogoPublicId);
-        console.log("Old logo deleted:", oldLogoPublicId);
-      } catch (err) {
-        console.warn("Failed to delete old logo:", err.message);
-      }
+    if (oldLogoId) {
+      const { deleteFromCloudinary } =
+        await import("../middleware/uploadMiddleware.js");
+      await deleteFromCloudinary(oldLogoId).catch((err) =>
+        console.warn("Delete failed:", err),
+      );
     }
 
-    // Upload to Cloudinary
-    let result = null;
-    try {
-      result = await uploadToCloudinary(req.file.buffer, {
-        folder: getCloudinaryFolder("logo"),
-        resource_type: "image",
-        public_id: `logo-${Date.now()}`,
-      });
-    } catch (cloudError) {
-      console.error("Cloudinary upload failed:", cloudError);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to upload logo to cloud storage",
-      });
-    }
+    const { uploadToCloudinary } =
+      await import("../middleware/uploadMiddleware.js");
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "skillsync/company-logos",
+    });
 
-    // Update ONLY logo fields
-    const updatedUser = await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       req.user._id,
       {
         $set: {
@@ -319,35 +242,24 @@ export const uploadCompanyLogo = async (req, res) => {
       { new: true },
     );
 
-    // ✅ Clean company data for response
-    const cleanedCompany = cleanCompanyData(updatedUser.company);
-
     res.json({
       success: true,
-      data: {
-        logoUrl: cleanedCompany?.logo || "",
-        logoPublicId: cleanedCompany?.logoPublicId || "",
-      },
+      data: { logo: user.company.logo },
       message: "Logo uploaded successfully",
     });
   } catch (error) {
-    console.error("Upload logo error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get company stats
 export const getCompanyStats = async (req, res) => {
   try {
     if (req.user.role !== "recruiter") {
-      return res.status(403).json({
-        success: false,
-        message: "Only recruiters can access company stats",
-      });
+      return res.status(403).json({ success: false, message: "Access denied" });
     }
 
     const jobs = await Job.find({ recruiterId: req.user._id });
-    const jobIds = jobs.map((job) => job._id);
+    const jobIds = jobs.map((j) => j._id);
     const applications = await Application.find({ jobId: { $in: jobIds } });
 
     const stats = {
@@ -362,31 +274,26 @@ export const getCompanyStats = async (req, res) => {
       totalViews: jobs.reduce((sum, job) => sum + (job.viewsCount || 0), 0),
     };
 
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
     const monthlyData = [];
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
 
     for (let i = 5; i >= 0; i--) {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
-      const monthName = monthNames[5 - i];
       const count = applications.filter(
         (a) =>
           a.createdAt &&
           a.createdAt.getMonth() === date.getMonth() &&
           a.createdAt.getFullYear() === date.getFullYear(),
       ).length;
-      monthlyData.push({ month: monthName, applications: count });
+      monthlyData.push({ month: monthNames[5 - i], applications: count });
     }
 
     res.json({
       success: true,
-      data: {
-        stats,
-        chartData: monthlyData,
-      },
+      data: { stats, chartData: monthlyData },
     });
   } catch (error) {
-    console.error("Get company stats error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };

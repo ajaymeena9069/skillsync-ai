@@ -1,4 +1,4 @@
-// server/src/controllers/authController.js
+// backend/src/controllers/authController.js
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
@@ -17,125 +17,105 @@ const generateToken = (id, role) =>
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   });
 
-// ✅ Helper function to clean company data (remove nesting)
-const cleanCompanyData = (companyData) => {
-  if (!companyData) return null;
-
-  // If companyData is not an object, return default
-  if (typeof companyData !== "object") return null;
-
-  // Handle nested company object (company.company)
-  let cleaned = companyData;
-  while (cleaned.company && typeof cleaned.company === "object") {
-    cleaned = cleaned.company;
-  }
-
-  // Remove user wrapper if present
-  if (cleaned.user && typeof cleaned.user === "object") {
-    const { user, ...rest } = cleaned;
-    cleaned = rest;
-  }
-
-  // Return cleaned company object
+const formatUserResponse = (user) => {
   return {
-    name: cleaned.name || "",
-    logo: cleaned.logo || "",
-    logoPublicId: cleaned.logoPublicId || "",
-    email: cleaned.email || "",
-    phone: cleaned.phone || "",
-    website: cleaned.website || "",
-    location: cleaned.location || "",
-    founded: cleaned.founded || "",
-    size: cleaned.size || "",
-    industry: cleaned.industry || "",
-    description: cleaned.description || "",
-    mission: cleaned.mission || "",
-    vision: cleaned.vision || "",
-    socialLinks: {
-      linkedin: cleaned.socialLinks?.linkedin || "",
-      twitter: cleaned.socialLinks?.twitter || "",
-      github: cleaned.socialLinks?.github || "",
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    currentRole:
+      user.currentRole ||
+      (user.role === "recruiter" ? "Recruiter" : "Job Seeker"),
+    avatar: user.avatar || "",
+    phone: user.phone || "",
+    location: user.location || "",
+    experience: user.experience || "",
+    bio: user.bio || "",
+    skills: user.skills || [],
+    resumeUrl: user.resumeUrl || "",
+    parsedResume: user.parsedResume || null,
+    isEmailVerified: user.isEmailVerified,
+    isProfileComplete: user.isProfileComplete || false,
+    isCompanyComplete: user.isCompanyComplete || false,
+    profileViews: user.profileViews || 0,
+    company: user.company || {
+      name: "",
+      logo: "",
+      logoPublicId: "",
+      email: "",
+      phone: "",
+      website: "",
+      location: "",
+      founded: "",
+      size: "",
+      industry: "",
+      description: "",
+      mission: "",
+      vision: "",
+      socialLinks: { linkedin: "", twitter: "", github: "" },
+      benefits: [],
+      culture: "",
     },
-    benefits: cleaned.benefits || [],
-    culture: cleaned.culture || "",
   };
+};
+
+const getRedirectUrl = (user) => {
+  if (user.role === "recruiter" && !user.isCompanyComplete) {
+    return "/app/company";
+  }
+  if (user.role === "jobseeker" && !user.isProfileComplete) {
+    return "/app/profile";
+  }
+  return "/app/dashboard";
 };
 
 // ==================== REGISTER ====================
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role = "jobseeker" } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
-        message: "Email already exists",
-        success: false,
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already exists" });
     }
 
     const hashedPassword = await argon2.hash(password);
     const verificationCode = generateVerificationCode();
     const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
 
-    const userRole = role || "jobseeker";
-    const currentRole = userRole === "recruiter" ? null : "Job Seeker";
-
     const user = await User.create({
       name,
       email,
       password: hashedPassword,
-      role: userRole,
-      currentRole: currentRole,
+      role,
+      currentRole: role === "recruiter" ? "Recruiter" : "Job Seeker",
       isEmailVerified: false,
       verificationCode,
       verificationCodeExpires,
       isProfileComplete: false,
       isCompanyComplete: false,
       isGoogleUser: false,
-      googleId: null,
     });
 
-    const emailResult = await sendVerificationEmail(
-      email,
-      name,
-      verificationCode,
+    await sendVerificationEmail(email, name, verificationCode).catch((err) =>
+      console.error("Email send failed:", err),
     );
 
-    if (!emailResult.success) {
-      console.error("Verification email failed:", emailResult.error);
-      return res.status(201).json({
-        message:
-          "Account created but verification email failed. Please use 'Resend Code' option.",
-        success: true,
-        data: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          currentRole: user.currentRole,
-          requiresVerification: true,
-        },
-      });
-    }
-
     res.status(201).json({
-      message: "Registration successful! Please verify your email.",
       success: true,
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        currentRole: user.currentRole,
-        requiresVerification: true,
-      },
+      message: "Registration successful! Please verify your email.",
+      user: formatUserResponse(user),
+      requiresVerification: true,
     });
   } catch (error) {
-    res.status(500).json({
-      message: `Server error: ${error.message}`,
-      success: false,
-    });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: `Registration failed: ${error.message}`,
+      });
   }
 };
 
@@ -145,25 +125,25 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
+
     if (!user) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-        success: false,
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid email or password" });
     }
 
     if (user.isGoogleUser && !user.password) {
       return res.status(400).json({
-        message: "This account uses Google login. Please sign in with Google.",
         success: false,
+        message: "This account uses Google login. Please sign in with Google.",
         provider: "google",
       });
     }
 
     if (!user.isEmailVerified && user.password) {
       return res.status(403).json({
-        message: "Please verify your email before logging in.",
         success: false,
+        message: "Please verify your email before logging in.",
         requiresVerification: true,
         email: user.email,
       });
@@ -171,257 +151,136 @@ export const login = async (req, res) => {
 
     const isPasswordValid = await argon2.verify(user.password, password);
     if (!isPasswordValid) {
-      return res.status(401).json({
-        message: "Invalid email or password",
-        success: false,
-      });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid email or password" });
     }
 
     const token = generateToken(user._id, user.role);
 
-    // ✅ Clean company data before sending
-    const cleanedCompany = cleanCompanyData(user.company);
-
-    const userData = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      currentRole:
-        user.currentRole ||
-        (user.role === "recruiter" ? "Recruiter" : "Job Seeker"),
-      avatar: user.avatar || "",
-      phone: user.phone || "",
-      location: user.location || "",
-      experience: user.experience || "",
-      bio: user.bio || "",
-      skills: user.skills || [],
-      resumeUrl: user.resumeUrl || "",
-      parsedResume: user.parsedResume || null,
-      isEmailVerified: user.isEmailVerified,
-      isProfileComplete: user.isProfileComplete || false,
-      isCompanyComplete: user.isCompanyComplete || false,
-      company: cleanedCompany || {
-        name: "",
-        logo: "",
-        logoPublicId: "",
-        email: "",
-        phone: "",
-        website: "",
-        location: "",
-        founded: "",
-        size: "",
-        industry: "",
-        description: "",
-        mission: "",
-        vision: "",
-        socialLinks: { linkedin: "", twitter: "", github: "" },
-        benefits: [],
-        culture: "",
-      },
-    };
-
-    let redirectUrl = "/app/dashboard";
-    if (user.role === "recruiter" && !user.isCompanyComplete) {
-      redirectUrl = "/app/company";
-    } else if (user.role === "jobseeker" && !user.isProfileComplete) {
-      redirectUrl = "/app/profile";
-    }
-
     res.status(200).json({
-      message: "Login successful",
       success: true,
-      data: userData,
+      message: "Login successful",
+      user: formatUserResponse(user),
       token,
-      redirectUrl,
+      redirectUrl: getRedirectUrl(user),
     });
   } catch (error) {
-    res.status(500).json({
-      message: `Server error: ${error.message}`,
-      success: false,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: `Login failed: ${error.message}` });
   }
 };
 
 // ==================== GOOGLE AUTH ====================
 export const googleAuth = async (req, res) => {
   try {
-    const { idToken, role } = req.body;
+    const { credential, role } = req.body;
 
-    if (!idToken) {
-      return res.status(400).json({
-        success: false,
-        message: "Google token is required",
-      });
-    }
-
-    const ticket = await googleClient.verifyIdToken({
-      idToken: idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
+    console.log("Google auth request received:", {
+      hasCredential: !!credential,
+      role,
     });
 
-    const payload = ticket.getPayload();
-    const { email, name, picture, sub: googleId } = payload;
-
-    if (!email) {
+    if (!credential) {
       return res.status(400).json({
         success: false,
-        message: "Email not provided by Google",
+        message: "Google credential is required",
       });
     }
 
+    // Verify the credential
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+      console.log("✅ Google credential verified for:", payload.email);
+    } catch (verifyError) {
+      console.error("❌ Credential verification failed:", verifyError.message);
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Google credential",
+      });
+    }
+
+    const { email, name, picture, sub: googleId } = payload;
+
+    // Check if user exists
     let user = await User.findOne({ email });
 
     if (user) {
+      // Existing user with email/password
       if (user.password && !user.isGoogleUser) {
         return res.status(409).json({
           success: false,
           message:
-            "This email is registered with email/password. Please login with email and password instead.",
+            "This email is registered with password. Please login with email instead.",
           provider: "email",
         });
       }
 
+      // Update existing Google user
       if (!user.googleId) {
         user.googleId = googleId;
         user.isGoogleUser = true;
         if (picture && !user.avatar) user.avatar = picture;
         await user.save();
+        console.log("✅ Existing user updated with Google ID");
       }
 
       const token = generateToken(user._id, user.role);
 
-      // ✅ Clean company data before sending
-      const cleanedCompany = cleanCompanyData(user.company);
-
-      const userData = {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        currentRole:
-          user.currentRole ||
-          (user.role === "recruiter" ? "Recruiter" : "Job Seeker"),
-        avatar: user.avatar || picture,
-        phone: user.phone || "",
-        location: user.location || "",
-        experience: user.experience || "",
-        bio: user.bio || "",
-        skills: user.skills || [],
-        resumeUrl: user.resumeUrl || "",
-        parsedResume: user.parsedResume || null,
-        isEmailVerified: user.isEmailVerified,
-        isProfileComplete: user.isProfileComplete || false,
-        isCompanyComplete: user.isCompanyComplete || false,
-        company: cleanedCompany || {
-          name: "",
-          logo: "",
-          logoPublicId: "",
-          email: "",
-          phone: "",
-          website: "",
-          location: "",
-          founded: "",
-          size: "",
-          industry: "",
-          description: "",
-          mission: "",
-          vision: "",
-          socialLinks: { linkedin: "", twitter: "", github: "" },
-          benefits: [],
-          culture: "",
-        },
-      };
-
       return res.status(200).json({
         success: true,
         message: "Login successful",
-        data: userData,
+        user: formatUserResponse(user),
         token,
+        redirectUrl: getRedirectUrl(user),
       });
     }
 
+    // New user - check if role is provided
     if (!role) {
+      console.log("⚠️ New user, role selection required");
       return res.status(200).json({
         success: true,
         requiresRole: true,
-        tempData: { email, name, googleId, avatar: picture, idToken },
+        tempData: { email, name, googleId, avatar: picture || "" },
         message: "Please select your role to continue",
       });
     }
 
-    if (!["jobseeker", "recruiter"].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid role selected",
-      });
-    }
-
-    const currentRole = role === "recruiter" ? "Recruiter" : "Job Seeker";
-
+    // Create new Google user
+    console.log("✅ Creating new Google user with role:", role);
     user = await User.create({
-      name,
+      name: name || email.split("@")[0],
       email,
       googleId,
       role,
-      currentRole: currentRole,
+      currentRole: role === "recruiter" ? "Recruiter" : "Job Seeker",
       isGoogleUser: true,
       isEmailVerified: true,
       avatar: picture || "",
       isProfileComplete: false,
       isCompanyComplete: false,
       password: null,
-      company: {
-        name: "",
-        logo: "",
-        logoPublicId: "",
-        email: "",
-        phone: "",
-        website: "",
-        location: "",
-        founded: "",
-        size: "",
-        industry: "",
-        description: "",
-        mission: "",
-        vision: "",
-        socialLinks: { linkedin: "", twitter: "", github: "" },
-        benefits: [],
-        culture: "",
-      },
     });
 
     const token = generateToken(user._id, user.role);
 
-    const userData = {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      currentRole: user.currentRole,
-      avatar: user.avatar,
-      phone: user.phone || "",
-      location: user.location || "",
-      experience: user.experience || "",
-      bio: user.bio || "",
-      skills: user.skills || [],
-      resumeUrl: user.resumeUrl || "",
-      parsedResume: user.parsedResume || null,
-      isEmailVerified: user.isEmailVerified,
-      isProfileComplete: user.isProfileComplete,
-      isCompanyComplete: user.isCompanyComplete,
-      company: user.company,
-    };
-
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: "Account created successfully",
-      data: userData,
+      user: formatUserResponse(user),
       token,
+      redirectUrl: getRedirectUrl(user),
     });
   } catch (error) {
-    console.error("Google Auth Error:", error);
-    return res.status(500).json({
+    console.error("❌ Google Auth Error:", error);
+    res.status(500).json({
       success: false,
       message: `Google authentication failed: ${error.message}`,
     });
@@ -435,32 +294,26 @@ export const verifyEmail = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     if (user.isEmailVerified) {
       const token = generateToken(user._id, user.role);
       return res.status(200).json({
         success: true,
-        message: "Email already verified. Welcome back!",
+        message: "Email already verified",
+        user: formatUserResponse(user),
         token,
-        data: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+        redirectUrl: getRedirectUrl(user),
       });
     }
 
     if (user.verificationCode !== verificationCode) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid verification code",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid verification code" });
     }
 
     if (user.verificationCodeExpires < new Date()) {
@@ -475,26 +328,26 @@ export const verifyEmail = async (req, res) => {
     user.verificationCodeExpires = null;
     await user.save();
 
-    await sendWelcomeEmail(user.email, user.name);
+    await sendWelcomeEmail(user.email, user.name).catch((err) =>
+      console.error("Welcome email failed:", err),
+    );
 
     const token = generateToken(user._id, user.role);
 
     res.status(200).json({
       success: true,
-      message: "Email verified successfully! You are now logged in.",
+      message: "Email verified successfully!",
+      user: formatUserResponse(user),
       token,
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      redirectUrl: getRedirectUrl(user),
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: `Verification failed: ${error.message}`,
-    });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: `Verification failed: ${error.message}`,
+      });
   }
 };
 
@@ -505,17 +358,15 @@ export const resendVerificationCode = async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     if (user.isEmailVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Email already verified. You can login.",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email already verified" });
     }
 
     const verificationCode = generateVerificationCode();
@@ -523,29 +374,19 @@ export const resendVerificationCode = async (req, res) => {
     user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    const emailResult = await sendVerificationEmail(
-      user.email,
-      user.name,
-      verificationCode,
-    );
-
-    if (!emailResult.success) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send verification email. Please try again.",
-      });
-    }
+    await sendVerificationEmail(user.email, user.name, verificationCode);
 
     res.status(200).json({
       success: true,
-      message:
-        "New verification code sent to your email. Valid for 10 minutes.",
+      message: "New verification code sent! Valid for 10 minutes.",
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: `Failed to resend code: ${error.message}`,
-    });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: `Failed to resend code: ${error.message}`,
+      });
   }
 };
 
@@ -560,7 +401,7 @@ export const forgotPassword = async (req, res) => {
       return res.status(200).json({
         success: true,
         message:
-          "If an account exists with that email, you will receive a password reset link.",
+          "If an account exists, you will receive a password reset link.",
       });
     }
 
@@ -578,28 +419,21 @@ export const forgotPassword = async (req, res) => {
     user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
     await user.save();
 
-    const emailResult = await sendPasswordResetEmail(
-      user.email,
-      user.name,
-      resetToken,
+    await sendPasswordResetEmail(user.email, user.name, resetToken).catch(
+      (err) => console.error("Reset email failed:", err),
     );
-
-    if (!emailResult.success) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send reset email. Please try again.",
-      });
-    }
 
     res.status(200).json({
       success: true,
-      message: "Password reset link sent to your email. Valid for 1 hour.",
+      message: "Password reset link sent! Valid for 1 hour.",
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: `Failed to send reset email: ${error.message}`,
-    });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: `Failed to send reset email: ${error.message}`,
+      });
   }
 };
 
@@ -623,7 +457,7 @@ export const resetPassword = async (req, res) => {
     if (!user) {
       return res.status(400).json({
         success: false,
-        message: "Invalid or expired reset token. Please request a new one.",
+        message: "Invalid or expired reset token",
       });
     }
 
@@ -635,14 +469,15 @@ export const resetPassword = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message:
-        "Password reset successful! You can now login with your new password.",
+      message: "Password reset successful! You can now login.",
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: `Password reset failed: ${error.message}`,
-    });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: `Password reset failed: ${error.message}`,
+      });
   }
 };
 
@@ -650,24 +485,12 @@ export const resetPassword = async (req, res) => {
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select("-password");
-
-    // ✅ Clean company data before sending
-    const cleanedCompany = cleanCompanyData(user.company);
-
-    const userData = {
-      ...user.toObject(),
-      company: cleanedCompany || user.company,
-    };
-
     res.status(200).json({
       success: true,
-      data: userData,
+      user: formatUserResponse(user),
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

@@ -18,7 +18,7 @@ import {
 import { Button } from "../../components/Button";
 import { Badge } from "../../components/Badge";
 import { StatsCard } from "../../components/common/StatsCard";
-import { useGetMyJobsQuery } from "../../services/jobsApi";
+import { useGetAnalyticsQuery } from "../../services/recruiterApi";
 import { PageLoader } from "../../components/PageLoader";
 import {
   AreaChart,
@@ -40,17 +40,32 @@ import {
 
 export function AnalyticsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("week");
-  const { data: jobsData, isLoading } = useGetMyJobsQuery();
-  const jobs = jobsData?.data || [];
+  const { data: analyticsRes, isLoading } = useGetAnalyticsQuery();
+  const analyticsData = analyticsRes?.data || null;
 
-  // Calculate metrics
-  const totalJobs = jobs.length;
-  const totalApplicants = jobs.reduce(
-    (sum, j) => sum + (j.applicationsCount || 0),
-    0,
-  );
-  const totalViews = jobs.reduce((sum, j) => sum + (j.viewsCount || 0), 0);
-  const activeJobs = jobs.filter((j) => j.status === "active").length;
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  // Handle case where no data is returned yet
+  if (!analyticsData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-500">No analytics data available.</p>
+      </div>
+    );
+  }
+
+  const {
+    totalJobs,
+    totalApplicants,
+    totalViews,
+    activeJobs,
+    monthlyData,
+    topJobs,
+    statusData,
+    recentActivity
+  } = analyticsData;
 
   const avgApplicantsPerJob =
     totalJobs > 0 ? Math.round(totalApplicants / totalJobs) : 0;
@@ -58,49 +73,13 @@ export function AnalyticsPage() {
   const conversionRate =
     totalViews > 0 ? Math.round((totalApplicants / totalViews) * 100) : 0;
 
-  // Top performing jobs
-  const topJobs = [...jobs]
-    .sort((a, b) => (b.applicationsCount || 0) - (a.applicationsCount || 0))
-    .slice(0, 5);
-
-  // Status distribution data for pie chart
-  const statusData = [
-    {
-      name: "Active",
-      value: jobs.filter((j) => j.status === "active").length,
-      color: "#10B981",
-    },
-    {
-      name: "Draft",
-      value: jobs.filter((j) => j.status === "draft").length,
-      color: "#F59E0B",
-    },
-    {
-      name: "Closed",
-      value: jobs.filter((j) => j.status === "closed").length,
-      color: "#EF4444",
-    },
-  ].filter((item) => item.value > 0);
-
-  // Monthly applications data (mock - replace with real data)
-  const monthlyData = [
-    { month: "Jan", applications: 12, views: 45 },
-    { month: "Feb", applications: 19, views: 62 },
-    { month: "Mar", applications: 25, views: 78 },
-    { month: "Apr", applications: 32, views: 95 },
-    { month: "May", applications: 28, views: 88 },
-    { month: "Jun", applications: 35, views: 110 },
-  ];
-
   // Job performance data
-  const jobPerformanceData = topJobs.map((job, index) => ({
+  const jobPerformanceData = topJobs.map((job) => ({
     name:
       job.title.length > 15 ? job.title.substring(0, 15) + "..." : job.title,
-    applicants: job.applicationsCount || 0,
-    views: job.viewsCount || 0,
-    conversion: Math.round(
-      ((job.applicationsCount || 0) / (job.viewsCount || 1)) * 100,
-    ),
+    applicants: job.applicants,
+    views: job.views,
+    conversion: job.conversion,
   }));
 
   const stats = [
@@ -133,10 +112,6 @@ export function AnalyticsPage() {
       color: "from-orange-500 to-amber-600",
     },
   ];
-
-  if (isLoading) {
-    return <PageLoader />;
-  }
 
   return (
     <div className="min-h-screen">
@@ -193,7 +168,7 @@ export function AnalyticsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {stats.map((stat, index) => (
             <StatsCard key={index} {...stat} />
           ))}
@@ -217,8 +192,10 @@ export function AnalyticsPage() {
                 Last 6 months
               </Badge>
             </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={monthlyData}>
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[450px]">
+                <ResponsiveContainer width="100%" height={280}>
+                  <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient
                     id="applicantsGradient"
@@ -276,6 +253,8 @@ export function AnalyticsPage() {
                 />
               </AreaChart>
             </ResponsiveContainer>
+          </div>
+            </div>
           </div>
 
           {/* Job Status Distribution */}
@@ -422,7 +401,7 @@ export function AnalyticsPage() {
 
         {/* Top Performing Jobs */}
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/30 dark:border-gray-700/50 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-gray-50/30 to-white/30 dark:from-gray-800/30 dark:to-gray-900/30">
+          <div className="p-5 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-gray-50/30 to-white/30 dark:from-gray-800/30 dark:to-gray-900/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -441,9 +420,11 @@ export function AnalyticsPage() {
           </div>
           <div className="p-5">
             {topJobs.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={jobPerformanceData}
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-[500px]">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={jobPerformanceData}
                   layout="vertical"
                   margin={{ left: 20 }}
                 >
@@ -483,6 +464,8 @@ export function AnalyticsPage() {
                   />
                 </BarChart>
               </ResponsiveContainer>
+                </div>
+              </div>
             ) : (
               <div className="flex items-center justify-center h-[300px] text-gray-400 dark:text-gray-500">
                 No job performance data available
@@ -500,40 +483,38 @@ export function AnalyticsPage() {
             </h3>
           </div>
           <div className="space-y-3">
-            {jobs.slice(0, 5).map((job) => (
-              <div
-                key={job._id}
-                className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      New application for{" "}
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {job.title}
-                      </span>
-                    </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                      at {job.company}
-                    </p>
+            {recentActivity.length > 0 ? (
+              recentActivity.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        New application for{" "}
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {activity.jobTitle}
+                        </span>
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        by {activity.applicantName}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                      {new Date(activity.date).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {job.applicationsCount || 0}
-                    </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500">
-                      applicants
-                    </p>
-                  </div>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                    {new Date(job.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-gray-500 text-center py-4">
+                No recent activity found.
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -27,12 +27,6 @@ export const companyApi = baseApi.injectEndpoints({
       query: () => "/company/stats",
       providesTags: ["CompanyStats"],
     }),
-    getPublicCompanyProfile: builder.query({
-      query: (recruiterId) => `/company/public/${recruiterId}`,
-      providesTags: (_result, _error, recruiterId) => [
-        { type: "PublicCompany", id: recruiterId },
-      ],
-    }),
   }),
 });
 

@@ -4,20 +4,20 @@ import {
   createJob,
   getJobs,
   getJobById,
-  getMyJobs,
   updateJob,
   deleteJob,
 } from "../controllers/jobController.js";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect, optionalAuth } from "../middleware/authMiddleware.js";
 import { authorize } from "../middleware/roleMiddleware.js"; // 👈 Import role middleware
 import { validate } from "../middleware/validate.middleware.js";
 import { JobSchema } from "../schemas/job.schema.js";
+import { getMyJobs } from "../controllers/recruiterController.js";
 
 const router = express.Router();
 
 // ========== PUBLIC ROUTES (No authentication needed) ==========
 router.get("/", getJobs);
-router.get("/:id", getJobById);
+router.get("/:id", optionalAuth, getJobById);
 
 // ========== PROTECTED ROUTES (Authentication required) ==========
 

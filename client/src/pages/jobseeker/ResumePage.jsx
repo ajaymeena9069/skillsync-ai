@@ -18,8 +18,10 @@ import { Badge } from "../../components/Badge";
 import { ResumeUpload } from "../../components/resume-upload";
 import { useGetResumeQuery } from "../../services/resumeApi";
 import { PageLoader } from "../../components/PageLoader";
+import { useNavigate } from "react-router-dom";
 
 export function ResumePage() {
+  const navigate = useNavigate();
   const { data: resumeData, isLoading, refetch } = useGetResumeQuery();
 
   const hasResume = resumeData?.data && resumeData.data.skills?.length > 0;
@@ -153,7 +155,7 @@ export function ResumePage() {
                   {/* Experience Section */}
                   {extractedData.experience &&
                     extractedData.experience !== "Not specified" && (
-                      <div className="border-t border-gray-100 dark:border-gray-800/60 pt-6">
+                      <div className="border-t border-gray-200 dark:border-gray-800/60 pt-6">
                         <div className="flex items-center gap-2 mb-4">
                           <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                             <Briefcase className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -162,7 +164,7 @@ export function ResumePage() {
                             Experience Summary
                           </h3>
                         </div>
-                        <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 border border-gray-100 dark:border-gray-800/60">
+                        <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 border border-gray-200 dark:border-gray-800/60">
                           {extractedData.experience === "Fresher" ||
                           extractedData.experience === "0 years" ? (
                             <div className="flex items-center gap-3">
@@ -190,7 +192,7 @@ export function ResumePage() {
 
                   {/* Projects Section */}
                   {extractedData.projects?.length > 0 && (
-                    <div className="border-t border-gray-100 dark:border-gray-800/60 pt-6">
+                    <div className="border-t border-gray-200 dark:border-gray-800/60 pt-6">
                       <div className="flex items-center gap-2 mb-4">
                         <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                           <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-300" />
@@ -206,7 +208,7 @@ export function ResumePage() {
                         {extractedData.projects.map((project, i) => (
                           <div
                             key={i}
-                            className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 border border-gray-100 dark:border-gray-800/60 hover:shadow-md transition-all"
+                            className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 border border-gray-200 dark:border-gray-800/60 hover:shadow-md transition-all"
                           >
                             <h4 className="font-medium text-gray-900 dark:text-white mb-1">
                               {project.name}
@@ -222,7 +224,7 @@ export function ResumePage() {
 
                   {/* Degrees Section */}
                   {extractedData.education?.filter(e => e.type !== "school").length > 0 && (
-                    <div className="border-t border-gray-100 dark:border-gray-800/60 pt-6">
+                    <div className="border-t border-gray-200 dark:border-gray-800/60 pt-6">
                       <div className="flex items-center gap-2 mb-4">
                         <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                           <GraduationCap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
@@ -235,7 +237,7 @@ export function ResumePage() {
                         {extractedData.education.filter(e => e.type !== "school").map((edu, index) => (
                           <div
                             key={index}
-                            className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 border border-gray-100 dark:border-gray-800/60"
+                            className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 border border-gray-200 dark:border-gray-800/60"
                           >
                             <h4 className="font-medium text-gray-900 dark:text-white">
                               {edu.degree}
@@ -252,7 +254,7 @@ export function ResumePage() {
 
                   {/* School Education Section */}
                   {extractedData.education?.filter(e => e.type === "school").length > 0 && (
-                    <div className="border-t border-gray-100 dark:border-gray-800/60 pt-6">
+                    <div className="border-t border-gray-200 dark:border-gray-800/60 pt-6">
                       <div className="flex items-center gap-2 mb-4">
                         <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                           <GraduationCap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
@@ -358,7 +360,7 @@ export function ResumePage() {
                     </p>
                   </div>
 
-                  <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800/60">
+                  <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-800/60">
                     <div className="flex justify-between items-center">
                       <span className="text-sm flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                         <Code className="w-3.5 h-3.5 text-gray-400" /> Skills
@@ -485,18 +487,21 @@ export function ResumePage() {
                     <Button
                       variant="outline"
                       className="w-full justify-start gap-2 text-gray-900 dark:text-white"
+                      onClick={() => navigate("/app/jobs")}
                     >
                       <Briefcase className="w-4 h-4" /> Find Matching Jobs
                     </Button>
                     <Button
                       variant="outline"
                       className="w-full justify-start gap-2"
+                      onClick={() => navigate("/app/roadmap")}
                     >
                       <Sparkles className="w-4 h-4" /> Generate Skill Roadmap
                     </Button>
                     <Button
                       variant="outline"
                       className="w-full justify-start gap-2"
+                      onClick={() => navigate("/app/skill-gap")}
                     >
                       <TrendingUp className="w-4 h-4" /> View Skill Gap Analysis
                     </Button>

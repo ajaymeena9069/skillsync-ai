@@ -1,6 +1,7 @@
 import Application from "../models/Application.js";
 import Job from "../models/Job.js";
 import Resume from "../models/Resume.js";
+import { createNotification } from "./notificationController.js";
 
 // Simple match calculation
 const calculateMatchScore = (userSkills, jobSkills) => {
@@ -27,7 +28,7 @@ export const getApplicationById = async (req, res) => {
     const { applicationId } = req.params;
 
     const application = await Application.findById(applicationId)
-      .populate("userId", "name email skills avatar")
+      .populate("userId", "name email skills avatar location phone bio socialLinks preferredJobType experience")
       .populate(
         "jobId",
         "title company location employmentType requiredSkills salaryMin salaryMax salaryCurrency",
@@ -129,6 +130,17 @@ export const applyForJob = async (req, res) => {
       $inc: { applicationsCount: 1 },
     });
 
+    // Notify Recruiter
+    await createNotification({
+      recipient: job.recruiterId,
+      sender: userId,
+      type: "application_submitted",
+      title: "New Application Received",
+      message: `${req.user?.name || "A candidate"} applied for ${job.title}`,
+      link: `/app/applications/${application._id}`,
+      metadata: { applicationId: application._id, jobId: job._id },
+    });
+
     res.status(201).json({
       success: true,
       message: "Application submitted successfully",
@@ -180,7 +192,7 @@ export const getJobApplications = async (req, res) => {
     }
 
     const applications = await Application.find({ jobId })
-      .populate("userId", "name email skills avatar")
+      .populate("userId", "name email skills avatar location phone bio socialLinks preferredJobType experience")
       .sort({ matchScore: -1, createdAt: -1 });
 
     res.json({
@@ -222,14 +234,32 @@ export const updateApplicationStatus = async (req, res) => {
       });
     }
 
-    application.status = status;
-    if (notes) application.notes = notes;
-    if (status !== "pending") {
-      application.reviewedAt = new Date();
-      application.reviewedBy = req.user._id;
+    const statusChanged = application.status !== status;
+
+    if (statusChanged) {
+      application.status = status;
+      if (status !== "pending") {
+        application.reviewedAt = new Date();
+        application.reviewedBy = req.user._id;
+      }
     }
 
+    if (notes !== undefined) application.notes = notes;
+
     await application.save();
+
+    // Notify Jobseeker only if status changed
+    if (statusChanged) {
+      await createNotification({
+        recipient: application.userId,
+        sender: req.user._id,
+        type: "application_status",
+        title: "Application Status Updated",
+        message: `Your application for ${job.title} was marked as ${status}`,
+        link: `/app/my-applications`,
+        metadata: { applicationId: application._id, jobId: job._id },
+      });
+    }
 
     res.json({
       success: true,

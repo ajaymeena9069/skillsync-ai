@@ -7,12 +7,13 @@ import { Button } from "./Button";
 import { useGoogleAuthMutation } from "../services/authApi";
 import { setCredentials } from "../features/auth/authSlice";
 import {
-  saveAccessToken,
-  saveUser,
+  setToken,
+  setUser,
   getRedirectPath,
 } from "../features/auth/authUtils";
+import { AnimatePresence, motion } from "framer-motion";
 
-export default function RoleSelectionModal({ tempData, onClose, darkMode }) {
+export default function RoleSelectionModal({ isOpen, tempData, onClose, darkMode }) {
   const [selectedRole, setSelectedRole] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,26 +28,22 @@ export default function RoleSelectionModal({ tempData, onClose, darkMode }) {
 
     try {
       console.log("Sending to backend:", {
-        idToken: tempData?.idToken,
+        credential: tempData?.credential,
         role: role,
       });
 
       const result = await googleAuth({
-        idToken: tempData?.idToken,
+        credential: tempData?.credential,
         role: role,
       }).unwrap();
 
       console.log("Role selection response:", result);
 
-      if (result.token && result.data) {
-        saveAccessToken(result.token);
-        saveUser(result.data);
-        dispatch(
-          setCredentials({ user: result.data, accessToken: result.token }),
-        );
-        navigate(getRedirectPath(result.data?.role));
+      if (result.success && result.user && result.token) {
+        dispatch(setCredentials({ user: result.user, token: result.token }));
+        navigate(result.redirectUrl || getRedirectPath(result.user.role));
       } else {
-        setError("Something went wrong. Please try again.");
+        setError(result.message || "Something went wrong. Please try again.");
       }
     } catch (err) {
       console.error("Role selection error:", err);
@@ -57,17 +54,28 @@ export default function RoleSelectionModal({ tempData, onClose, darkMode }) {
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-all duration-300"
-        onClick={onClose}
-      />
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            onClick={onClose}
+          />
 
-      {/* Modal */}
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in duration-300">
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, x: "-50%", y: "-50%" }}
+            animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}
+            exit={{ opacity: 0, scale: 0.95, x: "-50%", y: "-50%" }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-1/2 left-1/2 w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden"
+          >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Choose Your Role
           </h2>
@@ -155,7 +163,9 @@ export default function RoleSelectionModal({ tempData, onClose, darkMode }) {
             </div>
           )}
         </div>
-      </div>
-    </>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

@@ -7,20 +7,29 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
-// import { configureCloudinary } from "./config/cloudinary.js";
-
-// configureCloudinary();
+import http from "http";
+import { initSocket } from "./sockets/socketHandler.js";
+import "./config/cloudinary.js";
 
 // Import routes
 import authRoutes from "./routes/authRoutes.js";
-import userRoutes from "./routes/userRoutes.js";
+import jobSeekerRoutes from "./routes/jobSeekerRoutes.js"; // ✅ Job Seeker routes (replaces userRoutes)
 import resumeRoutes from "./routes/resumeRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
 import recruiterRoutes from "./routes/recruiterRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
 import matchRoutes from "./routes/matchRoutes.js";
+import commonRoutes from "./routes/commonRoutes.js"; // ✅ Common routes (avatar upload for both roles)
+import aiRoutes from "./routes/aiRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import testimonialRoutes from "./routes/testimonialRoutes.js";
+
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.io
+initSocket(server);
 
 // Middleware
 app.use(helmet());
@@ -37,13 +46,17 @@ app.use(cookieParser());
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/jobseeker", jobSeekerRoutes);
+app.use("/api/common", commonRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use("/api/jobs", jobRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/recruiter", recruiterRoutes);
 app.use("/api/company", companyRoutes);
 app.use("/api/matches", matchRoutes);
+app.use("/api/ai", aiRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/testimonials", testimonialRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -64,6 +77,6 @@ mongoose
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
 });

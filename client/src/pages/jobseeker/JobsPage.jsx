@@ -204,7 +204,7 @@ export function JobsPage() {
 
           {/* Active Filters Chips */}
           {activeFilterCount > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800/60">
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-800/60">
               {searchTerm && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm">
                   <span>🔍 {searchTerm}</span>
@@ -282,11 +282,11 @@ export function JobsPage() {
                   className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:bg-white dark:focus:bg-gray-900 transition-all text-gray-900 dark:text-white"
                 >
                   <option value="">All Locations</option>
-                  <option value="Remote">🌍 Remote</option>
-                  <option value="San Francisco">🌉 San Francisco</option>
-                  <option value="New York">🗽 New York</option>
-                  <option value="Seattle">☕ Seattle</option>
-                  <option value="Austin">🤠 Austin</option>
+                  <option value="Remote">Remote</option>
+                  <option value="San Francisco">San Francisco</option>
+                  <option value="New York">New York</option>
+                  <option value="Seattle">Seattle</option>
+                  <option value="Austin">Austin</option>
                 </select>
               </div>
 
@@ -302,11 +302,11 @@ export function JobsPage() {
                   className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:bg-white dark:focus:bg-gray-900 transition-all text-gray-900 dark:text-white"
                 >
                   <option value="">All Levels</option>
-                  <option value="entry">🌱 Entry Level</option>
-                  <option value="junior">📘 Junior (1-2 yrs)</option>
-                  <option value="mid">📚 Mid Level (3-5 yrs)</option>
-                  <option value="senior">🚀 Senior (5-8 yrs)</option>
-                  <option value="lead">👑 Lead (8+ yrs)</option>
+                  <option value="entry">Entry Level</option>
+                  <option value="junior">Junior (1-2 yrs)</option>
+                  <option value="mid">Mid Level (3-5 yrs)</option>
+                  <option value="senior">Senior (5-8 yrs)</option>
+                  <option value="lead">Lead (8+ yrs)</option>
                 </select>
               </div>
 
@@ -322,9 +322,9 @@ export function JobsPage() {
                   className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:bg-white dark:focus:bg-gray-900 transition-all text-gray-900 dark:text-white"
                 >
                   <option value="">All</option>
-                  <option value="remote">🏠 Remote</option>
-                  <option value="onsite">🏢 Onsite</option>
-                  <option value="hybrid">🔄 Hybrid</option>
+                  <option value="remote">Remote</option>
+                  <option value="onsite">Onsite</option>
+                  <option value="hybrid">Hybrid</option>
                 </select>
               </div>
 
@@ -379,7 +379,7 @@ export function JobsPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-800/60">
+            <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200 dark:border-gray-800/60">
               <Button
                 onClick={() => refetch()}
                 className="bg-gradient-to-r from-purple-600 to-indigo-600 px-8"
@@ -467,7 +467,7 @@ export function JobsPage() {
             {/* Pagination */}
             {pagination && pagination.pages > 1 && (
               <div className="flex justify-center mt-8">
-                <div className="flex items-center gap-2 bg-white dark:bg-gray-800/80 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700/50 p-1">
+                <div className="flex items-center gap-2 bg-white dark:bg-gray-800/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700/50 p-1">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}

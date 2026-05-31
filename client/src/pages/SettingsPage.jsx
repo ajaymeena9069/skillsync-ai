@@ -12,7 +12,7 @@ export function SettingsPage() {
           gradientText="Settings"
           description="Manage your account preferences and settings"
         />
-        <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 p-6">
+        <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 p-6">
           <p className="text-gray-600 dark:text-gray-400">
             Settings page coming soon...
           </p>

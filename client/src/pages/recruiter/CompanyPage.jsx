@@ -28,6 +28,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Button } from "../../components/Button";
+import { PageLoader } from "../../components/PageLoader";
 import { Badge } from "../../components/Badge";
 import { PageHeader } from "../../components/common/PageHeader";
 import { StatsCard } from "../../components/common/StatsCard";
@@ -38,8 +39,8 @@ import {
   useGetCompanyStatsQuery,
 } from "../../services/companyApi";
 import { useDispatch, useSelector } from "react-redux";
-import { updateUserProfile } from "../../features/auth/authSlice";
-import { ProgressBar } from "../../components/ProgressBar";
+import { updateUser } from "../../features/auth/authSlice";
+import { OptimizedAvatar } from "../../components/common/OptimizedAvatar";
 
 export function CompanyPage() {
   const navigate = useNavigate();
@@ -116,10 +117,8 @@ export function CompanyPage() {
 
   const getCompanyCompletionPercentage = (company) => {
     if (!company) return 0;
-
     let completed = 0;
     const total = 8;
-
     if (company.name) completed++;
     if (company.logo) completed++;
     if (company.email) completed++;
@@ -128,11 +127,9 @@ export function CompanyPage() {
     if (company.industry) completed++;
     if (company.description?.length >= 50) completed++;
     if (company.benefits?.length > 0) completed++;
-
     return Math.round((completed / total) * 100);
   };
 
-  // Usage
   const completionPercentage = getCompanyCompletionPercentage(
     profileData?.data?.company,
   );
@@ -167,19 +164,16 @@ export function CompanyPage() {
     }));
   };
 
-  // ✅ Handle logo file selection - preview only
   const handleLogoSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setSelectedLogoFile(file);
-    const previewUrl = URL.createObjectURL(file);
-    setLogoPreview(previewUrl);
+    setLogoPreview(URL.createObjectURL(file));
     setSuccessMessage("New logo selected. Click Save to update.");
     setTimeout(() => setSuccessMessage(""), 3000);
   };
 
-  // ✅ Remove selected logo (revert to original)
   const handleRemoveSelectedLogo = () => {
     setSelectedLogoFile(null);
     setLogoPreview(formData.logo);
@@ -196,10 +190,10 @@ export function CompanyPage() {
         const formDataLogo = new FormData();
         formDataLogo.append("logo", selectedLogoFile);
         const uploadResult = await uploadCompanyLogo(formDataLogo).unwrap();
-        finalLogoUrl = uploadResult.data.logoUrl;
+        finalLogoUrl = uploadResult.data.logo;
       }
 
-      // ✅ Send clean flat data
+      // Prepare update data
       const updateData = {
         name: formData.name?.trim() || "",
         logo: finalLogoUrl || "",
@@ -224,24 +218,23 @@ export function CompanyPage() {
 
       const result = await updateCompanyProfile(updateData).unwrap();
 
-      // ✅ Update Redux with cleaned data
-      const cleanedCompany = result.data?.company || result.data;
-
+      // ✅ Update Redux with company data using updateUser (not updateUserProfile)
       dispatch(
-        updateUserProfile({
+        updateUser({
           company: result.data?.company || result.data,
-          isCompanyComplete: result.isComplete === true, // ✅ ensure boolean
+          isCompanyComplete: result.isComplete === true,
         }),
       );
 
-      // ✅ Update local form state
-      if (cleanedCompany) {
+      // Update local form state
+      const updatedCompany = result.data?.company || result.data;
+      if (updatedCompany) {
         setFormData((prev) => ({
           ...prev,
-          ...cleanedCompany,
-          logo: cleanedCompany.logo || finalLogoUrl,
+          ...updatedCompany,
+          logo: updatedCompany.logo || finalLogoUrl,
         }));
-        setLogoPreview(cleanedCompany.logo || finalLogoUrl);
+        setLogoPreview(updatedCompany.logo || finalLogoUrl);
       }
 
       setSuccessMessage(
@@ -323,16 +316,7 @@ export function CompanyPage() {
   ];
 
   if (isLoadingProfile) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 dark:text-gray-400">
-            Loading company profile...
-          </p>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
@@ -422,24 +406,21 @@ export function CompanyPage() {
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Company Header Card */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
               <div className="px-6 pt-6 pb-6">
                 <div className="flex flex-col md:flex-row gap-6">
-                  {/* Logo Section with Update Option */}
+                  {/* Logo Section */}
                   <div className="flex-shrink-0">
-                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/50 dark:to-indigo-900/50 border-4 border-gray-100 dark:border-gray-700 shadow-lg flex items-center justify-center overflow-hidden">
-                      {logoPreview ? (
-                        <img
-                          src={logoPreview}
-                          alt={formData.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Building2 className="w-12 h-12 text-purple-600 dark:text-purple-400" />
-                      )}
+                    <div className="w-28 h-28 rounded-full shadow-lg">
+                      <OptimizedAvatar 
+                        src={logoPreview} 
+                        alt={formData.name} 
+                        fallbackText={formData.name?.charAt(0)?.toUpperCase()}
+                        className="w-full h-full border-4 border-gray-200 dark:border-gray-700 text-3xl"
+                        size={300}
+                      />
                     </div>
 
-                    {/* Logo Upload/Update Buttons - Only in Edit Mode */}
                     {isEditing && (
                       <div className="mt-2 flex flex-col gap-1">
                         <label className="cursor-pointer text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 flex items-center justify-center gap-1">
@@ -500,8 +481,8 @@ export function CompanyPage() {
             </div>
 
             {/* Contact Information */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   Contact Information
                 </h3>
@@ -645,8 +626,8 @@ export function CompanyPage() {
             </div>
 
             {/* About Company */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   About the Company
                 </h3>
@@ -714,11 +695,11 @@ export function CompanyPage() {
             </div>
           </div>
 
-          {/* Right Column - Sidebar */}
+          {/* Right Column */}
           <div className="space-y-6">
             {/* Social Links */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   Connect With Us
                 </h3>
@@ -728,22 +709,22 @@ export function CompanyPage() {
                   {
                     platform: "linkedin",
                     icon: Link2,
-                    color: "text-blue-600 dark:text-blue-400",
-                    bg: "bg-blue-50 dark:bg-blue-900/20",
+                    color: "text-blue-600",
+                    bg: "bg-blue-50",
                     placeholder: "LinkedIn URL",
                   },
                   {
                     platform: "twitter",
                     icon: Share2,
-                    color: "text-sky-500 dark:text-sky-400",
-                    bg: "bg-sky-50 dark:bg-sky-900/20",
+                    color: "text-sky-500",
+                    bg: "bg-sky-50",
                     placeholder: "Twitter URL",
                   },
                   {
                     platform: "github",
                     icon: Code,
-                    color: "text-gray-700 dark:text-gray-300",
-                    bg: "bg-gray-100 dark:bg-gray-800",
+                    color: "text-gray-700",
+                    bg: "bg-gray-100",
                     placeholder: "GitHub URL",
                   },
                 ].map(({ platform, icon: Icon, color, bg, placeholder }) => (
@@ -778,9 +759,9 @@ export function CompanyPage() {
               </div>
             </div>
 
-            {/* Benefits & Perks */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            {/* Benefits */}
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900 dark:text-white">
                     Benefits & Perks
@@ -788,7 +769,7 @@ export function CompanyPage() {
                   {isEditing && !showBenefitInput && (
                     <button
                       onClick={() => setShowBenefitInput(true)}
-                      className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700"
+                      className="text-sm text-purple-600 dark:text-purple-400"
                     >
                       + Add Benefit
                     </button>
@@ -801,13 +782,13 @@ export function CompanyPage() {
                     <Badge
                       key={benefit}
                       variant="primary"
-                      className="text-sm px-3 py-1.5 gap-1 dark:bg-purple-900/30 dark:text-purple-300"
+                      className="text-sm px-3 py-1.5 gap-1"
                     >
                       <Zap className="w-3 h-3" /> {benefit}
                       {isEditing && (
                         <button
                           onClick={() => handleRemoveBenefit(benefit)}
-                          className="ml-1 text-purple-400 hover:text-red-500"
+                          className="ml-1 hover:text-red-500"
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -827,7 +808,7 @@ export function CompanyPage() {
                       value={newBenefit}
                       onChange={(e) => setNewBenefit(e.target.value)}
                       placeholder="Enter benefit..."
-                      className="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                      className="w-full px-4 py-2.5 text-sm rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                     />
                     <div className="flex gap-2">
                       <Button
@@ -854,9 +835,9 @@ export function CompanyPage() {
               </div>
             </div>
 
-            {/* Company Culture */}
-            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-100 dark:border-gray-700/50 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
+            {/* Culture */}
+            <div className="bg-white dark:bg-gray-800/80 rounded-2xl border border-gray-200 dark:border-gray-700/50 shadow-sm overflow-hidden">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700/50 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/30 dark:to-gray-800/80">
                 <h3 className="font-semibold text-gray-900 dark:text-white">
                   Company Culture
                 </h3>
@@ -868,7 +849,7 @@ export function CompanyPage() {
                     value={formData.culture}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:text-white"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500/20 dark:text-white"
                     placeholder="Describe your company culture..."
                   />
                 ) : (
