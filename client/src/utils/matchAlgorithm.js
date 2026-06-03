@@ -1,5 +1,12 @@
 /**
- * Normalize skills array (lowercase + trim)
+ * Normalize skill string (lowercase, remove non-alphanumeric)
+ */
+const normalizeSkillString = (skill) => {
+  return skill?.toLowerCase().replace(/[^a-z0-9]/g, "") || "";
+};
+
+/**
+ * Normalize skills array
  */
 const normalizeSkills = (skills) => {
   return skills?.map((s) => s.toLowerCase().trim()) || [];
@@ -9,12 +16,17 @@ const normalizeSkills = (skills) => {
  * Match a job skill against user skills
  */
 const isSkillMatch = (jobSkill, userSkills) => {
-  return userSkills.some(
-    (userSkill) =>
-      userSkill === jobSkill ||
-      userSkill.includes(jobSkill) ||
-      jobSkill.includes(userSkill),
-  );
+  const cleanJobSkill = normalizeSkillString(jobSkill);
+  return userSkills.some((userSkill) => {
+    const cleanUserSkill = normalizeSkillString(userSkill);
+    if (!cleanJobSkill || !cleanUserSkill) return false;
+    
+    return (
+      cleanUserSkill === cleanJobSkill ||
+      cleanUserSkill.includes(cleanJobSkill) ||
+      cleanJobSkill.includes(cleanUserSkill)
+    );
+  });
 };
 
 /**

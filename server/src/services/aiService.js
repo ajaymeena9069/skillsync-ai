@@ -20,7 +20,7 @@ export const analyzeSkillGap = async (userSkills, targetJobs) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const jobSkillsSet = new Set();
     const jobPreferredSet = new Set();
@@ -49,7 +49,7 @@ export const analyzeSkillGap = async (userSkills, targetJobs) => {
           {
             "skill": "SkillName",
             "resources": [
-              { "type": "Course|Video|Article|Practice", "title": "Resource title", "platform": "Platform name", "duration": "Xh", "url": "" }
+              { "type": "Course|Video|Article|Practice", "title": "Resource title", "platform": "Platform name", "duration": "Xh", "url": "https://..." }
             ]
           }
         ],
@@ -58,6 +58,8 @@ export const analyzeSkillGap = async (userSkills, targetJobs) => {
       }
 
       Rules:
+      1. Keep it realistic based on the provided skills.
+      2. For EVERY resource, you MUST provide a real, highly relevant HTTPS URL (e.g., a direct link to a Udemy course, official documentation, or a targeted YouTube search link). Do NOT leave URLs blank.
       - Rate current skills based on how relevant they are to the target jobs (not absolute proficiency)
       - Missing skills should be ones the candidate doesn't have but jobs require
       - Importance: High = required by most jobs, Medium = required by some, Low = nice-to-have
@@ -71,7 +73,7 @@ export const analyzeSkillGap = async (userSkills, targetJobs) => {
     const result = await Promise.race([
       model.generateContent(prompt),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("AI request timed out")), 15000),
+        setTimeout(() => reject(new Error("AI request timed out")), 45000),
       ),
     ]);
 

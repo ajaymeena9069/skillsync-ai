@@ -14,11 +14,14 @@ import {
   UserCheck,
   ChevronDown,
   Brain,
+  Briefcase,
+  CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
-import { Button } from "../Button";
-import { Badge } from "../Badge";
+import { Button } from "../ui/Button";
+import { Badge } from "../ui/Badge";
+import { Card, CardContent } from "../ui/Card";
 import { OptimizedAvatar } from "./OptimizedAvatar";
 import { ConfirmationModal } from "./ConfirmationModal";
 import { CandidateActionButtons } from "../ui/CandidateActionButtons";
@@ -28,28 +31,28 @@ import { AIAnalysisModal } from "../AIAnalysisModal";
 const statusConfig = {
   New: {
     icon: Clock,
-    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    hoverBg: "hover:bg-blue-50 dark:hover:bg-blue-900/20",
+    color: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+    label: "New",
   },
   Reviewed: {
     icon: Eye,
-    color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-    hoverBg: "hover:bg-purple-50 dark:hover:bg-purple-900/20",
+    color: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800",
+    label: "Reviewed",
   },
   Shortlisted: {
     icon: UserCheck,
-    color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    hoverBg: "hover:bg-amber-50 dark:hover:bg-amber-900/20",
+    color: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+    label: "Shortlisted",
   },
   Rejected: {
     icon: XCircle,
-    color: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    hoverBg: "hover:bg-red-50 dark:hover:bg-red-900/20",
+    color: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+    label: "Rejected",
   },
   Hired: {
     icon: CheckCircle,
-    color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    hoverBg: "hover:bg-emerald-50 dark:hover:bg-emerald-900/20",
+    color: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
+    label: "Hired",
   },
 };
 
@@ -75,17 +78,20 @@ export function CandidateCard({
     matchScore,
     skills = [],
     applicationId,
+    createdAt,
   } = candidate;
 
-  // Normalize status to match statusConfig keys (e.g. "shortlisted" -> "Shortlisted")
+  // Normalize status
   const status = rawStatus
     ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1).toLowerCase()
     : "New";
 
+  const statusInfo = statusConfig[status] || statusConfig.New;
+  const StatusIcon = statusInfo.icon;
+
   const getInitials = () => {
     return (
-      name
-        ?.split(" ")
+      name?.split(" ")
         .map((n) => n[0])
         .join("")
         .toUpperCase()
@@ -94,21 +100,15 @@ export function CandidateCard({
   };
 
   const getMatchScoreColor = (score) => {
-    if (score >= 80)
-      return "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30";
-    if (score >= 60)
-      return "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/30";
-    if (score >= 40)
-      return "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30";
-    return "text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800";
+    if (score >= 80) return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800";
+    if (score >= 60) return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800";
+    if (score >= 40) return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800";
+    return "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700";
   };
 
   const handleViewProfile = () => {
-    if (onViewProfile) {
-      onViewProfile(candidate);
-    } else if (applicationId) {
-      navigate(`/app/candidates/${applicationId}`);
-    }
+    if (onViewProfile) onViewProfile(candidate);
+    else if (applicationId) navigate(`/app/candidates/${applicationId}`);
   };
 
   const handleStatusChange = (newStatus) => {
@@ -120,10 +120,7 @@ export function CandidateCard({
 
   const handleConfirmStatusChange = async () => {
     try {
-      await updateStatus({
-        applicationId,
-        status: pendingStatus?.toLowerCase(),
-      }).unwrap();
+      await updateStatus({ applicationId, status: pendingStatus?.toLowerCase() }).unwrap();
       toast.success(`Application marked as ${pendingStatus}`);
       setShowConfirmModal(false);
       setPendingStatus(null);
@@ -132,19 +129,26 @@ export function CandidateCard({
     }
   };
 
-  const StatusIcon = statusConfig[status]?.icon || Clock;
-  const statusColorClass = statusConfig[status]?.color || statusConfig.New.color;
+  const formatDate = (date) => {
+    if (!date) return "Recently";
+    const diff = Math.floor((new Date() - new Date(date)) / (1000 * 60 * 60 * 24));
+    if (diff === 0) return "Today";
+    if (diff === 1) return "Yesterday";
+    if (diff < 7) return `${diff} days ago`;
+    if (diff < 30) return `${Math.floor(diff / 7)} weeks ago`;
+    return `${Math.floor(diff / 30)} months ago`;
+  };
 
-  // Compact variant (for sidebars, mobile)
+  // Compact variant (optimized for small screens)
   if (variant === "compact") {
     return (
       <div
         onClick={handleViewProfile}
-        className={`group bg-white dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700/50 p-3 hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800/50 transition-all duration-200 cursor-pointer ${className}`}
+        className={`group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-800/50 p-3 hover:shadow-md hover:border-purple-300 dark:hover:border-purple-700 transition-all cursor-pointer ${className}`}
       >
         <div className="flex items-center gap-3">
           <div className="relative flex-shrink-0">
-            <div className="w-10 h-10 rounded-full shadow-md">
+            <div className="w-10 h-10 rounded-full ring-2 ring-purple-500/30 dark:ring-purple-400/30 shadow-sm overflow-hidden">
               <OptimizedAvatar
                 src={candidate.avatar}
                 alt={name}
@@ -164,11 +168,9 @@ export function CandidateCard({
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{appliedFor}</p>
           </div>
           {showActions && (
-            <div className="flex-shrink-0">
-              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusColorClass}`}>
-                <StatusIcon className="w-3 h-3" />
-                <span className="hidden sm:inline">{status}</span>
-              </div>
+            <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+              <StatusIcon className="w-3 h-3" />
+              <span className="hidden sm:inline">{status}</span>
             </div>
           )}
         </div>
@@ -176,132 +178,128 @@ export function CandidateCard({
     );
   }
 
-  // Detailed variant (full card)
+  // Full modern card – fully responsive
   return (
     <>
-      <div
-        className={`group bg-white dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-700/50 hover:shadow-lg hover:border-purple-200 dark:hover:border-purple-800/50 transition-all duration-200 ${className}`}
-      >
-        <div className="p-4 sm:p-5">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-            <div className="flex items-start gap-4">
-              {/* Avatar */}
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full flex-shrink-0 shadow-md">
-                <OptimizedAvatar
-                  src={candidate.avatar}
-                  alt={name}
-                  fallbackText={getInitials()}
-                  className="w-full h-full text-base sm:text-lg"
-                  size={150}
-                />
-              </div>
-
-              {/* Main info */}
-              <div>
-                <h4 className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg">
-                  {name}
-                </h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{appliedFor}</p>
-                {location && (
-                  <div className="flex items-center gap-1 mt-1 text-xs text-gray-400 dark:text-gray-500">
-                    <MapPin className="w-3 h-3" />
-                    <span className="truncate max-w-[150px] sm:max-w-none">{location}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right side: match score + status */}
-            <div className="flex flex-row sm:flex-col items-center justify-between sm:items-end gap-3 sm:gap-2">
-              {matchScore && (
-                <div className={`flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full ${getMatchScoreColor(matchScore)}`}>
-                  <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="text-xs sm:text-sm font-semibold">{matchScore}% Match</span>
-                </div>
-              )}
-              {showActions && applicationId ? (
-                <StatusDropdown
-                  status={status}
-                  statusColorClass={statusColorClass}
-                  StatusIcon={StatusIcon}
-                  isUpdating={isUpdating}
-                  onStatusChange={handleStatusChange}
-                />
-              ) : (
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${statusColorClass}`}>
-                  <StatusIcon className="w-3 h-3" />
-                  <span>{status}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Skills */}
-          {skills.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3 sm:mt-4">
-              {skills.slice(0, 6).map((skill) => (
-                <span
-                  key={skill}
-                  className="text-[11px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                >
-                  {skill}
-                </span>
-              ))}
-              {skills.length > 6 && (
-                <span className="text-[11px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500">
-                  +{skills.length - 6}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Email */}
-          {email && (
-            <div className="mt-2 sm:mt-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-              <Mail className="w-3 h-3" />
-              <span className="truncate flex-1">{email}</span>
-            </div>
-          )}
-
-          {/* Actions */}
-          {showActions && (
-            <div className="mt-3 sm:mt-4 pt-2 sm:pt-3 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex flex-wrap gap-2 items-center justify-between">
-                <div className="flex flex-wrap gap-2">
-                  <CandidateActionButtons
-                    candidate={candidate}
-                    onViewProfile={handleViewProfile}
+      <Card className="group hover:shadow-xl transition-all duration-300 border border-gray-200/50 dark:border-gray-800/50 rounded-2xl">
+        <CardContent className="p-0">
+          <div className="p-4 sm:p-5 space-y-4">
+            {/* Header: Avatar + Title + Match Badge */}
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full ring-2 ring-purple-500/30 dark:ring-purple-400/30 shadow-sm overflow-hidden flex-shrink-0">
+                  <OptimizedAvatar
+                    src={candidate.avatar}
+                    alt={name}
+                    fallbackText={getInitials()}
+                    className="w-full h-full text-base sm:text-lg"
+                    size={150}
                   />
                 </div>
-                {/* AI Analysis Button */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg hover:text-purple-600 transition-colors">
+                    {name}
+                  </h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{appliedFor}</p>
+                  {location && (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-gray-400 dark:text-gray-500">
+                      <MapPin className="w-3 h-3" />
+                      <span>{location}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {matchScore && (
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold self-start ${getMatchScoreColor(matchScore)}`}>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {matchScore}% Match
+                </div>
+              )}
+            </div>
+
+            {/* Additional info row (email + date) – wraps on mobile */}
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+              {email && (
+                <span className="flex items-center gap-1.5">
+                  <Mail className="w-4 h-4" />
+                  {email}
+                </span>
+              )}
+              {createdAt && (
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays className="w-4 h-4" />
+                  Applied {formatDate(createdAt)}
+                </span>
+              )}
+            </div>
+
+            {/* Skills – wraps naturally */}
+            {skills.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {skills.slice(0, 6).map((skill) => (
+                  <span
+                    key={skill}
+                    className="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                  >
+                    {skill}
+                  </span>
+                ))}
+                {skills.length > 6 && (
+                  <span className="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500">
+                    +{skills.length - 6}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Status + Actions – responsive flex wrap */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                  <StatusIcon className="w-3.5 h-3.5" />
+                  {statusInfo.label}
+                </div>
+                {showActions && applicationId && (
+                  <StatusDropdown
+                    status={status}
+                    statusConfig={statusConfig}
+                    isUpdating={isUpdating}
+                    onStatusChange={handleStatusChange}
+                  />
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleViewProfile}
+                  className="gap-1.5 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <Eye className="w-4 h-4" />
+                  Profile
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setShowAIModal(true)}
-                  className="gap-2 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 hover:text-purple-800 dark:hover:bg-purple-900/30 dark:hover:text-purple-200"
+                  className="gap-1.5 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20"
                 >
-                  <Brain className="w-3.5 h-3.5" />
-                  AI Analysis
+                  <Brain className="w-4 h-4" />
+                  AI
                 </Button>
               </div>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* AI Analysis Modal */}
-      {applicationId && (
-        <AIAnalysisModal
-          isOpen={showAIModal}
-          onClose={() => setShowAIModal(false)}
-          applicationId={applicationId}
-          candidateName={name}
-          jobTitle={appliedFor}
-        />
-      )}
-
-      {/* Status Confirmation Modal */}
+      <AIAnalysisModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        applicationId={applicationId}
+        candidateName={name}
+        jobTitle={appliedFor}
+      />
       <ConfirmationModal
         isOpen={showConfirmModal}
         onClose={() => {
@@ -318,10 +316,11 @@ export function CandidateCard({
   );
 }
 
-// Status dropdown component (unchanged, but we keep it inside the same file)
-function StatusDropdown({ status, statusColorClass, StatusIcon, isUpdating, onStatusChange }) {
+// Improved StatusDropdown – fully visible, with better positioning and z-index
+function StatusDropdown({ status, statusConfig, isUpdating, onStatusChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -331,34 +330,38 @@ function StatusDropdown({ status, statusColorClass, StatusIcon, isUpdating, onSt
     };
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      // Recalculate position on open to ensure it's not clipped
+      if (buttonRef.current && dropdownRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const dropdownHeight = 240; // approximate height
+        if (spaceBelow < dropdownHeight) {
+          dropdownRef.current.style.bottom = "100%";
+          dropdownRef.current.style.top = "auto";
+          dropdownRef.current.style.marginBottom = "8px";
+        } else {
+          dropdownRef.current.style.top = "100%";
+          dropdownRef.current.style.bottom = "auto";
+          dropdownRef.current.style.marginTop = "8px";
+        }
+      }
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
   const options = ["New", "Reviewed", "Shortlisted", "Hired", "Rejected"];
+  const currentConfig = statusConfig[status] || statusConfig.New;
 
   return (
-    <div className="relative" ref={dropdownRef} onClick={(e) => e.stopPropagation()}>
+    <div className="relative inline-block" ref={dropdownRef}>
       <button
+        ref={buttonRef}
         onClick={() => !isUpdating && setIsOpen(!isOpen)}
         disabled={isUpdating}
-        className={`
-          inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full text-xs sm:text-sm font-semibold
-          transition-all duration-200 focus:outline-none
-          ${statusColorClass}
-          ${isUpdating ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-[1.02] active:scale-[0.98]"}
-          ${isOpen ? "ring-2 ring-purple-500/50 shadow-md" : "shadow-sm"}
-        `}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
       >
-        <span className="flex items-center gap-1.5">
-          <StatusIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-          <span className="hidden xs:inline">{status}</span>
-        </span>
-        <div className="w-px h-3.5 bg-current opacity-30 mx-0.5" />
-        <ChevronDown
-          className={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
-            }`}
-        />
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        Change
       </button>
 
       <AnimatePresence>
@@ -368,14 +371,17 @@ function StatusDropdown({ status, statusColorClass, StatusIcon, isUpdating, onSt
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-40 sm:w-44 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700/50 py-1.5 z-[60]"
+            className="absolute z-50 min-w-[160px] bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 overflow-hidden"
+            style={{
+              top: "100%",
+              left: 0,
+              marginTop: "8px",
+            }}
           >
             {options.map((opt) => {
-              const OptIcon = statusConfig[opt]?.icon || Clock;
+              const OptIcon = statusConfig[opt]?.icon;
               const isSelected = status === opt;
               const optColor = statusConfig[opt]?.color.split(" ")[0] || "text-gray-600";
-              const hoverBg = statusConfig[opt]?.hoverBg || "hover:bg-gray-50 dark:hover:bg-gray-700/50";
-
               return (
                 <button
                   key={opt}
@@ -383,15 +389,12 @@ function StatusDropdown({ status, statusColorClass, StatusIcon, isUpdating, onSt
                     onStatusChange(opt);
                     setIsOpen(false);
                   }}
-                  className={`
-                    w-full flex items-center gap-2.5 px-3 sm:px-4 py-2 text-xs sm:text-sm text-left transition-all duration-150
-                    ${isSelected
+                  className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-all ${isSelected
                       ? `${optColor} font-semibold bg-gray-50 dark:bg-gray-700/30`
-                      : `text-gray-600 dark:text-gray-400 ${hoverBg} hover:text-gray-900 dark:hover:text-white`
-                    }
-                  `}
+                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    }`}
                 >
-                  <OptIcon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isSelected ? "opacity-100" : "opacity-60"}`} />
+                  {OptIcon && <OptIcon className="w-4 h-4" />}
                   <span>{opt}</span>
                   {isSelected && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-500" />}
                 </button>

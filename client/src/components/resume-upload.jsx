@@ -20,6 +20,9 @@ import {
 import { setCredentials } from "../features/auth/authSlice";
 import { setResume } from "../features/resume/resumeSlice";
 
+
+import { toast } from "sonner";
+
 export function ResumeUpload({ onUploadComplete }) {
   const [file, setFile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState("idle");
@@ -112,7 +115,11 @@ export function ResumeUpload({ onUploadComplete }) {
       onUploadComplete?.(result.data);
     } catch (err) {
       setUploadStatus("error");
-      setErrorMessage(err?.data?.message || "Failed to parse resume");
+      const msg = err?.data?.message || "Failed to parse resume";
+      setErrorMessage(msg);
+      if (err?.status === 429) {
+        toast.error(msg);
+      }
       console.error("Upload error:", err);
     }
   };
@@ -233,9 +240,16 @@ export function ResumeUpload({ onUploadComplete }) {
         <div className="mt-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
-            <p className="text-sm text-red-700 dark:text-red-400">
-              {errorMessage}
-            </p>
+            <div className="flex-1">
+              <p className="text-sm text-red-700 dark:text-red-400">
+                {errorMessage}
+              </p>
+              {errorMessage?.toLowerCase().includes("limit") && (
+                <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">
+                  Please try again in 24 hours.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

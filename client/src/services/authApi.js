@@ -45,7 +45,7 @@ export const authApi = baseApi.injectEndpoints({
     // Resend verification code
     resendVerificationCode: builder.mutation({
       query: (data) => ({
-        url: "/auth/resend-code",
+        url: "/auth/resend-verification",
         method: "POST",
         body: data,
       }),
@@ -74,6 +74,16 @@ export const authApi = baseApi.injectEndpoints({
       query: () => "/auth/me",
       providesTags: ["User"],
     }),
+
+    // Upgrade to Developer Account
+    upgradeDeveloper: builder.mutation({
+      query: (data) => ({
+        url: "/auth/upgrade-developer",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
 });
 
@@ -86,4 +96,5 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useGetMeQuery,
+  useUpgradeDeveloperMutation,
 } = authApi;

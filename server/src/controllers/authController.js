@@ -10,12 +10,9 @@ import {
   generateVerificationCode,
 } from "../services/emailService.js";
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+import { generateToken } from "../utils/generateToken.js";
 
-const generateToken = (id, role) =>
-  jwt.sign({ id, role }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const formatUserResponse = (user) => {
   return {
@@ -23,6 +20,8 @@ const formatUserResponse = (user) => {
     name: user.name,
     email: user.email,
     role: user.role,
+    isDeveloper: user.isDeveloper || false,
+    profession: user.profession || "",
     currentRole:
       user.currentRole ||
       (user.role === "recruiter" ? "Recruiter" : "Job Seeker"),
@@ -60,13 +59,7 @@ const formatUserResponse = (user) => {
 };
 
 const getRedirectUrl = (user) => {
-  if (user.role === "recruiter" && !user.isCompanyComplete) {
-    return "/app/company";
-  }
-  if (user.role === "jobseeker" && !user.isProfileComplete) {
-    return "/app/profile";
-  }
-  return "/app/dashboard";
+  return user.role === "recruiter" ? "/app/recruiter-dashboard" : "/app/dashboard";
 };
 
 // ==================== REGISTER ====================
@@ -97,6 +90,7 @@ export const register = async (req, res) => {
       isProfileComplete: false,
       isCompanyComplete: false,
       isGoogleUser: false,
+      isDeveloper: req.body.adminKey === process.env.ADMIN_BYPASS_KEY,
     });
 
     await sendVerificationEmail(email, name, verificationCode).catch((err) =>
@@ -500,4 +494,21 @@ export const logout = async (req, res) => {
     success: true,
     message: "Logged out successfully",
   });
+};
+
+export const upgradeDeveloper = async (req, res) => {
+  try {
+    const { adminKey } = req.body;
+    
+    if (adminKey !== process.env.ADMIN_BYPASS_KEY) {
+      return res.status(401).json({ success: false, message: "Invalid developer key" });
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, { isDeveloper: true }, { new: true });
+    
+    res.json({ success: true, user: formatUserResponse(user) });
+  } catch (error) {
+    console.error("Upgrade developer error:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 };

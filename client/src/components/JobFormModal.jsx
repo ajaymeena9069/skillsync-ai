@@ -1,6 +1,7 @@
 // client/src/components/JobFormModal.jsx
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   X,
   Briefcase,
@@ -20,10 +21,10 @@ import {
   Gift,
   ChevronDown,
   PenBox,
+  Activity,
 } from "lucide-react";
 import { Button } from "./Button";
 import { Badge } from "./Badge";
-import { useState } from "react";
 import { useSelector } from "react-redux";
 import { selectUser } from "../features/auth/authSlice";
 
@@ -46,6 +47,7 @@ export function JobFormModal({
     setValue,
     getValues,
     reset,
+    watch,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -62,6 +64,7 @@ export function JobFormModal({
       requiredSkills: [],
       preferredSkills: [],
       benefits: [],
+      status: "active",
     },
   });
 
@@ -85,6 +88,12 @@ export function JobFormModal({
     remove: removeBenefit,
     replace: replaceBenefits,
   } = useFieldArray({ control, name: "benefits" });
+
+  const locationType = watch("locationType");
+  const employmentType = watch("employmentType");
+  const experienceLevel = watch("experienceLevel");
+  const salaryCurrency = watch("salaryCurrency");
+  const status = watch("status");
 
   // Auto-fill company info from user object
   useEffect(() => {
@@ -112,6 +121,7 @@ export function JobFormModal({
       setValue("salaryMax", initialData.salaryMax || "");
       setValue("salaryCurrency", initialData.salaryCurrency || "INR");
       setValue("description", initialData.description || "");
+      setValue("status", initialData.status || "active");
 
       if (initialData.requiredSkills?.length) {
         replaceRequired(
@@ -350,17 +360,16 @@ export function JobFormModal({
                     <Globe className="w-4 h-4 text-gray-400" />
                     Work Mode
                   </label>
-                  <div className="relative">
-                    <select
-                      {...register("locationType")}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
-                    >
-                      <option value="remote">Remote</option>
-                      <option value="onsite">Onsite</option>
-                      <option value="hybrid">Hybrid</option>
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  </div>
+                  <CustomDropdown
+                    value={locationType}
+                    onChange={(val) => setValue("locationType", val)}
+                    options={[
+                      { value: "remote", label: "Remote" },
+                      { value: "onsite", label: "Onsite" },
+                      { value: "hybrid", label: "Hybrid" },
+                    ]}
+                    placeholder="Select mode"
+                  />
                 </div>
 
                 {/* Employment Type */}
@@ -369,19 +378,18 @@ export function JobFormModal({
                     <CalendarDays className="w-4 h-4 text-gray-400" />
                     Employment Type
                   </label>
-                  <div className="relative">
-                    <select
-                      {...register("employmentType")}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
-                    >
-                      <option value="full-time">Full Time</option>
-                      <option value="part-time">Part Time</option>
-                      <option value="contract">Contract</option>
-                      <option value="internship">Internship</option>
-                      <option value="freelance">Freelance</option>
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  </div>
+                  <CustomDropdown
+                    value={employmentType}
+                    onChange={(val) => setValue("employmentType", val)}
+                    options={[
+                      { value: "full-time", label: "Full Time" },
+                      { value: "part-time", label: "Part Time" },
+                      { value: "contract", label: "Contract" },
+                      { value: "internship", label: "Internship" },
+                      { value: "freelance", label: "Freelance" },
+                    ]}
+                    placeholder="Select type"
+                  />
                 </div>
 
                 {/* Experience Level */}
@@ -390,22 +398,19 @@ export function JobFormModal({
                     <GraduationCap className="w-4 h-4 text-gray-400" />
                     Experience Level
                   </label>
-                  <div className="relative">
-                    <select
-                      {...register("experienceLevel")}
-                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200"
-                    >
-                      <option value="entry">Entry Level</option>
-                      <option value="junior">Junior (1-2 years)</option>
-                      <option value="mid">Mid Level (3-5 years)</option>
-                      <option value="senior">Senior (5-8 years)</option>
-                      <option value="lead">Lead (8+ years)</option>
-                      <option value="executive">
-                        Executive (10+ years)
-                      </option>
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  </div>
+                  <CustomDropdown
+                    value={experienceLevel}
+                    onChange={(val) => setValue("experienceLevel", val)}
+                    options={[
+                      { value: "entry", label: "Entry Level" },
+                      { value: "junior", label: "Junior (1-2 years)" },
+                      { value: "mid", label: "Mid Level (3-5 years)" },
+                      { value: "senior", label: "Senior (5-8 years)" },
+                      { value: "lead", label: "Lead (8+ years)" },
+                      { value: "executive", label: "Executive (10+ years)" },
+                    ]}
+                    placeholder="Select level"
+                  />
                 </div>
 
                 {/* Salary */}
@@ -415,18 +420,18 @@ export function JobFormModal({
                     Salary Range (per year)
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="relative">
-                      <select
-                        {...register("salaryCurrency")}
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 text-sm"
-                      >
-                        <option value="INR">₹ INR</option>
-                        <option value="USD">$ USD</option>
-                        <option value="EUR">€ EUR</option>
-                        <option value="GBP">£ GBP</option>
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                    </div>
+                    <CustomDropdown
+                      value={salaryCurrency}
+                      onChange={(val) => setValue("salaryCurrency", val)}
+                      options={[
+                        { value: "INR", label: "₹ INR" },
+                        { value: "USD", label: "$ USD" },
+                        { value: "EUR", label: "€ EUR" },
+                        { value: "GBP", label: "£ GBP" },
+                      ]}
+                      placeholder="Currency"
+                      className="!px-3 text-sm"
+                    />
                     <input
                       {...register("salaryMin")}
                       type="number"
@@ -441,6 +446,25 @@ export function JobFormModal({
                     />
                   </div>
                 </div>
+
+                {/* Status (Only in Edit Mode) */}
+                {isEditMode && (
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <Activity className="w-4 h-4 text-gray-400" />
+                      Job Status
+                    </label>
+                    <CustomDropdown
+                      value={status}
+                      onChange={(val) => setValue("status", val)}
+                      options={[
+                        { value: "active", label: "Active" },
+                        { value: "closed", label: "Closed" },
+                      ]}
+                      placeholder="Select status"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -735,6 +759,76 @@ function SkillInput({ onAdd, placeholder }) {
         <Plus className="w-4 h-4" />
         Add
       </Button>
+    </div>
+  );
+}
+
+// Custom Dropdown Component (Animated)
+function CustomDropdown({ value, options, onChange, placeholder, className = "" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  const selectedOption = options.find((opt) => opt.value === value) || null;
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-200 flex items-center justify-between text-left ${className}`}
+      >
+        <span className={selectedOption ? "" : "text-gray-500"}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute z-[100] w-full mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 py-1 overflow-hidden max-h-60 overflow-y-auto custom-scrollbar"
+          >
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left transition-all ${
+                  value === opt.value
+                    ? "text-purple-600 dark:text-purple-400 font-semibold bg-purple-50 dark:bg-purple-900/20"
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                }`}
+              >
+                <span>{opt.label}</span>
+                {value === opt.value && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-500" />
+                )}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

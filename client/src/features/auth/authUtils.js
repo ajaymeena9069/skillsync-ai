@@ -41,4 +41,11 @@ export const getRedirectPath = (role) => {
 export const clearAuthData = () => {
   removeToken();
   removeUser();
+  
+  // Clear all cached resume data across all users
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith("skillSync_resume_")) {
+      localStorage.removeItem(key);
+    }
+  });
 };

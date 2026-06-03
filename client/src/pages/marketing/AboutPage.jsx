@@ -27,6 +27,7 @@ import {
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
+import contactInfo from "../../data/contactInfo.json";
 
 export function AboutPage() {
   const navigate = useNavigate();
@@ -394,7 +395,7 @@ export function AboutPage() {
                   variant="outline"
                   size="lg"
                   className="border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-800/50 dark:text-purple-300 dark:hover:bg-purple-900/20 hover:scale-105 transition-all duration-300 gap-2"
-                  onClick={() => window.open("https://github.com", "_blank")}
+                  onClick={() => window.open(contactInfo.socialLinks.github.url, "_blank")}
                 >
                   <GitBranch className="w-5 h-5 mr-1" />
                   Contribute on GitHub

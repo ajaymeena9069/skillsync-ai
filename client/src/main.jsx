@@ -7,15 +7,19 @@ import { store } from "./app/store";
 import App from "./App";
 import "./styles/index.css";
 import { SocketProvider } from "./context/SocketContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-      <Provider store={store}>
-        <SocketProvider>
-          <App />
-        </SocketProvider>
-      </Provider>
-    </GoogleOAuthProvider>
+    <ErrorBoundary>
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+        <Provider store={store}>
+          <SocketProvider>
+            <App />
+          </SocketProvider>
+        </Provider>
+      </GoogleOAuthProvider>
+    </ErrorBoundary>
   </React.StrictMode>,
 );
+

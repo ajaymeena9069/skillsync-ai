@@ -2,8 +2,54 @@
 import User from "../models/User.js";
 import Job from "../models/Job.js";
 import Resume from "../models/Resume.js";
+import Application from "../models/Application.js";
 import { analyzeSkillGap } from "../services/aiService.js";
 import { generateRoadmap } from "../services/roadmapService.js";
+
+/**
+ * GET /api/ai/status
+ * Get the current AI usage status and cached data for the user.
+ */
+export const getAiStatus = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("aiUsage");
+
+    const now = new Date();
+    const isAdminKeyValid = req.user?.isDeveloper === true;
+    
+    // Check skill gap cache
+    const lastAnalyzed = user?.aiUsage?.skillGap?.lastAnalyzedAt;
+    const isSkillGapCached = !isAdminKeyValid && lastAnalyzed && (now - lastAnalyzed) < 24 * 60 * 60 * 1000;
+    
+    // Check roadmap cache
+    const lastGenerated = user?.aiUsage?.roadmap?.lastGeneratedAt;
+    const isRoadmapCached = !isAdminKeyValid && lastGenerated && (now - lastGenerated) < 24 * 60 * 60 * 1000;
+
+    res.json({
+      success: true,
+      data: {
+        skillGap: {
+          isCached: !!isSkillGapCached,
+          lastAnalyzedAt: lastAnalyzed,
+          data: user?.aiUsage?.skillGap?.cachedData || null,
+        },
+        roadmap: {
+          isCached: !!isRoadmapCached,
+          lastGeneratedAt: lastGenerated,
+          data: user?.aiUsage?.roadmap?.cachedData?.data || null,
+          meta: user?.aiUsage?.roadmap?.cachedData?.meta || null,
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Get AI status error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch AI status",
+    });
+  }
+};
 
 /**
  * GET /api/ai/skill-gap
@@ -14,10 +60,10 @@ export const getSkillGapAnalysis = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // Get user's resume and skills
+    // Get user's resume and skills, including aiUsage
     const [resume, user] = await Promise.all([
       Resume.findOne({ userId, isActive: true }),
-      User.findById(userId).select("skills"),
+      User.findById(userId).select("skills aiUsage"),
     ]);
 
     const userSkills = resume?.parsedSkills?.length
@@ -32,22 +78,56 @@ export const getSkillGapAnalysis = async (req, res) => {
       });
     }
 
-    // Get recent active jobs to compare against (limit to 50 for performance)
-    const targetJobs = await Job.find({ status: "active" })
+    const now = new Date();
+    const lastAnalyzed = user?.aiUsage?.skillGap?.lastAnalyzedAt;
+    const isAdminKeyValid = req.user?.isDeveloper === true;
+    
+    // Check 24-hour rate limit
+    if (!isAdminKeyValid && lastAnalyzed && (now - lastAnalyzed) < 24 * 60 * 60 * 1000) {
+      if (user?.aiUsage?.skillGap?.cachedData) {
+        return res.json({
+          success: true,
+          data: user.aiUsage.skillGap.cachedData,
+          isCached: true,
+          message: "Daily limit reached. Showing latest cached analysis.",
+        });
+      }
+    }
+
+    // Get applications for this user
+    const applications = await Application.find({ userId }).select("jobId");
+    
+    if (!applications.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Please apply to some jobs first to get a personalized analysis based on your interests.",
+      });
+    }
+
+    const jobIds = applications.map((app) => app.jobId);
+
+    // Get applied jobs to compare against
+    const targetJobs = await Job.find({ _id: { $in: jobIds } })
       .select("title requiredSkills preferredSkills")
-      .sort({ createdAt: -1 })
-      .limit(50)
       .lean();
 
     if (!targetJobs.length) {
       return res.status(400).json({
         success: false,
-        message: "No active jobs found to compare against.",
+        message: "None of the jobs you applied to could be retrieved for analysis.",
       });
     }
 
     // Run AI analysis (Gemini with fallback)
     const analysis = await analyzeSkillGap(userSkills, targetJobs);
+
+    // Save cache
+    user.aiUsage = user.aiUsage || {};
+    user.aiUsage.skillGap = {
+      lastAnalyzedAt: now,
+      cachedData: analysis,
+    };
+    await user.save();
 
     res.json({
       success: true,
@@ -136,10 +216,10 @@ export const getLearningRoadmap = async (req, res) => {
     const userId = req.user._id;
     const { weeks = 4, hoursPerWeek = 10, missingSkills: providedMissingSkills } = req.body || {};
 
-    // Get user's resume and skills
+    // Get user's resume and skills, including aiUsage
     const [resume, user] = await Promise.all([
       Resume.findOne({ userId, isActive: true }),
-      User.findById(userId).select("skills"),
+      User.findById(userId).select("skills aiUsage"),
     ]);
 
     const userSkills = resume?.parsedSkills?.length
@@ -154,20 +234,47 @@ export const getLearningRoadmap = async (req, res) => {
       });
     }
 
+    const now = new Date();
+    const lastGenerated = user?.aiUsage?.roadmap?.lastGeneratedAt;
+    const isAdminKeyValid = req.user?.isDeveloper === true;
+
+    // Check 24-hour rate limit
+    if (!isAdminKeyValid && lastGenerated && (now - lastGenerated) < 24 * 60 * 60 * 1000) {
+      if (user?.aiUsage?.roadmap?.cachedData) {
+        return res.json({
+          success: true,
+          data: user.aiUsage.roadmap.cachedData.data,
+          meta: user.aiUsage.roadmap.cachedData.meta,
+          isCached: true,
+          message: "Daily limit reached. Showing latest cached roadmap.",
+        });
+      }
+    }
+
     let missingSkills = providedMissingSkills;
 
     // If no missing skills provided, auto-detect from active jobs
     if (!missingSkills || !missingSkills.length) {
-      const targetJobs = await Job.find({ status: "active" })
+      // Get applications for this user
+      const applications = await Application.find({ userId }).select("jobId");
+      
+      if (!applications.length) {
+        return res.status(400).json({
+          success: false,
+          message: "Please apply to some jobs first to get a personalized roadmap based on your interests.",
+        });
+      }
+
+      const jobIds = applications.map((app) => app.jobId);
+
+      const targetJobs = await Job.find({ _id: { $in: jobIds } })
         .select("requiredSkills preferredSkills")
-        .sort({ createdAt: -1 })
-        .limit(50)
         .lean();
 
       if (!targetJobs.length) {
         return res.status(400).json({
           success: false,
-          message: "No active jobs found to determine skills to learn.",
+          message: "None of the jobs you applied to could be retrieved.",
         });
       }
 
@@ -211,14 +318,27 @@ export const getLearningRoadmap = async (req, res) => {
     // Generate roadmap
     const roadmap = await generateRoadmap(userSkills, missingSkills, { weeks, hoursPerWeek });
 
+    const metaData = {
+      userSkillsCount: userSkills.length,
+      missingSkillsCount: missingSkills.length,
+      missingSkills,
+    };
+
+    // Save cache
+    user.aiUsage = user.aiUsage || {};
+    user.aiUsage.roadmap = {
+      lastGeneratedAt: now,
+      cachedData: {
+        data: roadmap,
+        meta: metaData,
+      },
+    };
+    await user.save();
+
     res.json({
       success: true,
       data: roadmap,
-      meta: {
-        userSkillsCount: userSkills.length,
-        missingSkillsCount: missingSkills.length,
-        missingSkills,
-      },
+      meta: metaData,
     });
   } catch (error) {
     console.error("Roadmap generation error:", error);

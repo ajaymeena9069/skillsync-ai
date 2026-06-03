@@ -8,7 +8,7 @@ export const recruiterApi = baseApi.injectEndpoints({
       providesTags: ["DashboardStats"],
     }),
     getAnalytics: builder.query({
-      query: () => "/recruiter/analytics",
+      query: (period = "month") => `/recruiter/analytics?period=${period}`,
       providesTags: ["Analytics"],
     }),
     getCandidates: builder.query({

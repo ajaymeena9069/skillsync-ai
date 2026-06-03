@@ -1,6 +1,7 @@
 // backend/src/routes/aiRoutes.js
 import express from "express";
 import {
+  getAiStatus,
   getSkillGapAnalysis,
   getSkillGapForJob,
   getLearningRoadmap,
@@ -12,6 +13,9 @@ const router = express.Router();
 
 // All routes require authentication
 router.use(protect);
+
+// Get current AI usage status and cache
+router.get("/status", authorize("jobseeker"), getAiStatus);
 
 // Get overall skill gap analysis (compared to all active jobs)
 router.get("/skill-gap", authorize("jobseeker"), getSkillGapAnalysis);

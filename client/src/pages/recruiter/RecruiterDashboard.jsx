@@ -214,7 +214,7 @@ export function RecruiterDashboard() {
           {/* Left Column - Candidates & Jobs */}
           <div className="lg:col-span-2 space-y-6">
             {/* Top Matched Candidates Section */}
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/30 dark:border-gray-700/50 p-5 shadow-sm">
+            <div className="relative z-20 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/30 dark:border-gray-700/50 p-5 shadow-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">

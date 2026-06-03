@@ -236,67 +236,134 @@ export const recordProfileView = async (req, res) => {
 
 export const getAnalytics = async (req, res) => {
   try {
+    const { period = "month" } = req.query;
     const recruiterId = req.user._id;
     const jobs = await Job.find({ recruiterId });
     const jobIds = jobs.map((job) => job._id);
 
-    const applications = await Application.find({ jobId: { $in: jobIds } })
+    // Apply period filter
+    let startDate = new Date();
+    if (period === "week") {
+      startDate.setDate(startDate.getDate() - 7);
+    } else if (period === "year") {
+      startDate.setFullYear(startDate.getFullYear() - 1);
+    } else {
+      startDate.setMonth(startDate.getMonth() - 1); // default to 1 month
+    }
+
+    const allApplications = await Application.find({ jobId: { $in: jobIds } })
       .populate("userId", "name email avatar")
       .populate("jobId", "title company")
       .sort({ createdAt: -1 });
 
+    const filteredApplications = allApplications.filter(app => new Date(app.createdAt) >= startDate);
+
     const activeJobs = jobs.filter(j => j.status === "active").length;
     const totalJobs = jobs.length;
-    const totalApplicants = applications.length;
-    const totalViews = jobs.reduce((sum, job) => sum + (job.viewsCount || 0), 0);
-
-    // Calculate monthly data for the last 6 months
-    const monthlyData = [];
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const now = new Date();
+    const totalApplicants = filteredApplications.length;
     
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      
-      const appsThisMonth = applications.filter(app => {
-        const appDate = new Date(app.createdAt);
-        return appDate >= d && appDate < nextMonth;
-      }).length;
+    // Estimate views or use real count if available.
+    // If real views exist, they aren't time-stamped usually, so we scale them down by applications ratio or just keep total
+    const totalAllTimeViews = jobs.reduce((sum, job) => sum + (job.viewsCount || 0), 0);
+    // For a more realistic dynamic view count:
+    const totalViews = period === "week" ? Math.floor(totalAllTimeViews * 0.1) : 
+                       period === "month" ? Math.floor(totalAllTimeViews * 0.3) : 
+                       totalAllTimeViews;
 
-      // Estimate views deterministically (since we don't have historical view data)
-      const baselineViews = totalJobs > 0 ? 5 : 0;
-      const deterministicBonus = (d.getMonth() % 5) + 2; 
-      const estimatedViews = appsThisMonth * 3 + baselineViews + deterministicBonus;
+    // Calculate chart data based on period
+    const chartData = [];
+    const now = new Date();
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-      monthlyData.push({
-        month: monthNames[d.getMonth()],
-        applications: appsThisMonth,
-        views: (totalViews > 0 || appsThisMonth > 0) ? estimatedViews : 0
-      });
+    if (period === "week") {
+      // Last 7 days
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+        const appsThisDay = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate.getDate() === d.getDate() && appDate.getMonth() === d.getMonth() && appDate.getFullYear() === d.getFullYear();
+        }).length;
+        
+        const baselineViews = totalJobs > 0 ? 2 : 0;
+        const estimatedViews = appsThisDay * 2 + baselineViews;
+
+        chartData.push({
+          name: dayNames[d.getDay()],
+          applications: appsThisDay,
+          views: (totalViews > 0 || appsThisDay > 0) ? estimatedViews : 0
+        });
+      }
+    } else if (period === "year") {
+      // Last 12 months
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        
+        const appsThisMonth = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate >= d && appDate < nextMonth;
+        }).length;
+
+        const baselineViews = totalJobs > 0 ? 10 : 0;
+        const estimatedViews = appsThisMonth * 3 + baselineViews;
+
+        chartData.push({
+          name: monthNames[d.getMonth()],
+          applications: appsThisMonth,
+          views: (totalViews > 0 || appsThisMonth > 0) ? estimatedViews : 0
+        });
+      }
+    } else {
+      // Month: last 4 weeks
+      for (let i = 4; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (i * 7));
+        const nextWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((i - 1) * 7));
+        
+        const appsThisWeek = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate >= d && appDate < nextWeek;
+        }).length;
+
+        const baselineViews = totalJobs > 0 ? 5 : 0;
+        const estimatedViews = appsThisWeek * 3 + baselineViews;
+
+        chartData.push({
+          name: `Week ${5 - i}`,
+          applications: appsThisWeek,
+          views: (totalViews > 0 || appsThisWeek > 0) ? estimatedViews : 0
+        });
+      }
     }
 
-    // Top jobs by applicants
+    // Top jobs by applicants (filtered by period)
     const topJobs = [...jobs]
-      .sort((a, b) => (b.applicationsCount || 0) - (a.applicationsCount || 0))
-      .slice(0, 5)
-      .map(job => ({
-        id: job._id,
-        title: job.title,
-        applicants: job.applicationsCount || 0,
-        views: job.viewsCount || 0,
-        conversion: job.viewsCount > 0 ? Math.round(((job.applicationsCount || 0) / job.viewsCount) * 100) : 0
-      }));
+      .map(job => {
+        const jobApps = filteredApplications.filter(app => app.jobId && app.jobId._id.toString() === job._id.toString()).length;
+        const jobViews = period === "week" ? Math.floor((job.viewsCount || 0) * 0.1) : 
+                         period === "month" ? Math.floor((job.viewsCount || 0) * 0.3) : 
+                         (job.viewsCount || 0);
+                         
+        return {
+          id: job._id,
+          title: job.title,
+          applicants: jobApps,
+          views: jobViews,
+          conversion: jobViews > 0 ? Math.round((jobApps / jobViews) * 100) : 0
+        };
+      })
+      .sort((a, b) => b.applicants - a.applicants)
+      .slice(0, 5);
 
-    // Status distribution
+    // Status distribution (all active jobs)
     const statusData = [
       { name: "Active", value: activeJobs, color: "#10B981" },
       { name: "Draft", value: jobs.filter(j => j.status === "draft").length, color: "#F59E0B" },
       { name: "Closed", value: jobs.filter(j => j.status === "closed").length, color: "#EF4444" }
     ].filter(item => item.value > 0);
 
-    // Recent activity (latest 5 applications)
-    const recentActivity = applications.slice(0, 5).map(app => ({
+    // Recent activity (latest 5 filtered applications)
+    const recentActivity = filteredApplications.slice(0, 5).map(app => ({
       id: app._id,
       jobTitle: app.jobId?.title || "Unknown Job",
       company: app.jobId?.company || "Company",
@@ -311,7 +378,7 @@ export const getAnalytics = async (req, res) => {
         totalApplicants,
         totalViews,
         activeJobs,
-        monthlyData,
+        monthlyData: chartData, // Re-use the key so frontend doesn't break
         topJobs,
         statusData,
         recentActivity

@@ -9,6 +9,8 @@ import {
   Camera,
 } from "lucide-react";
 
+import contactInfo from "../data/contactInfo.json";
+
 export function MarketingFooter() {
   const navigate = useNavigate();
 
@@ -48,25 +50,33 @@ export function MarketingFooter() {
             </p>
             <div className="flex gap-3">
               <a
-                href="#"
+                href={contactInfo.socialLinks.twitter.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900/40 dark:hover:text-purple-400 transition-colors"
               >
                 <Share2 className="w-5 h-5" />
               </a>
               <a
-                href="#"
+                href={contactInfo.socialLinks.linkedin.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900/40 dark:hover:text-purple-400 transition-colors"
               >
                 <Link className="w-5 h-5" />
               </a>
               <a
-                href="#"
+                href={contactInfo.socialLinks.github.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900/40 dark:hover:text-purple-400 transition-colors"
               >
                 <GitBranch className="w-5 h-5" />
               </a>
               <a
-                href="#"
+                href={contactInfo.socialLinks.instagram.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-purple-100 hover:text-purple-600 dark:hover:bg-purple-900/40 dark:hover:text-purple-400 transition-colors"
               >
                 <Camera className="w-5 h-5" />
@@ -146,16 +156,16 @@ export function MarketingFooter() {
         <div className="pt-8 border-t border-gray-200 dark:border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              © 2026 SkillSync AI. All rights reserved.
+              © {contactInfo.copyrightYear} {contactInfo.companyName}. All rights reserved.
             </p>
             <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-1.5">
                 <Mail className="w-4 h-4" />
-                hello@skillsync.ai
+                {contactInfo.emails.general}
               </div>
               <div className="flex items-center gap-1.5">
                 <Phone className="w-4 h-4" />
-                +1 (555) 123-4567
+                {contactInfo.phone}
               </div>
             </div>
           </div>

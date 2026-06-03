@@ -6,6 +6,10 @@ export const testimonialApi = baseApi.injectEndpoints({
       query: () => "/testimonials/public",
       providesTags: ["Testimonial"],
     }),
+    getAllPublicTestimonials: builder.query({
+      query: () => "/testimonials/public/all",
+      providesTags: ["Testimonial"],
+    }),
     submitTestimonial: builder.mutation({
       query: (data) => ({
         url: "/testimonials",
@@ -19,5 +23,6 @@ export const testimonialApi = baseApi.injectEndpoints({
 
 export const {
   useGetPublicTestimonialsQuery,
+  useGetAllPublicTestimonialsQuery,
   useSubmitTestimonialMutation,
 } = testimonialApi;

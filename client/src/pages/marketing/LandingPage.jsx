@@ -35,7 +35,7 @@ export function LandingPage() {
   
   const { data: testimonialsRes } = useGetPublicTestimonialsQuery();
   const dynamicTestimonials = testimonialsRes?.data || [];
-
+  
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const isRecruiter = user?.role === 'recruiter';
 
@@ -404,6 +404,18 @@ export function LandingPage() {
                 </div>
               </Card>
             ))}
+          </div>
+
+          {/* View All Button */}
+          <div className="text-center mt-12">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/testimonials")}
+              className="border-purple-200 hover:border-purple-300 dark:border-purple-800 dark:hover:border-purple-700 bg-white/50 hover:bg-purple-50 dark:bg-gray-900/50 dark:hover:bg-purple-900/30 text-purple-700 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 group rounded-xl px-8 py-2.5 shadow-sm"
+            >
+              View All Feedback
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
           </div>
         </div>
       </section>

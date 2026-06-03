@@ -16,6 +16,7 @@ const notificationSchema = new mongoose.Schema(
       enum: [
         "application_submitted",
         "application_status",
+        "application_withdrawn",
         "profile_view",
         "new_job_match",
         "general",

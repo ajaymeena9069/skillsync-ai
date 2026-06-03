@@ -12,15 +12,31 @@ import {
   Plus,
   Search,
   Filter,
-  Calendar,
   DollarSign,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   X,
 } from "lucide-react";
-import { Button } from "../../components/Button";
-import { Badge } from "../../components/Badge";
+import { Button } from "../../components/ui/Button";
+import { Badge } from "../../components/ui/Badge";
+import { Input } from "../../components/ui/Input";
+import { Card, CardContent } from "../../components/ui/Card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/Select";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../../components/ui/Pagination";
 import { StatsCard } from "../../components/common/StatsCard";
 import {
   useGetMyJobsQuery,
@@ -125,9 +141,7 @@ export function PostedJobsPage() {
     }
   };
 
-  if (isLoading) {
-    return <PageLoader />;
-  }
+  if (isLoading) return <PageLoader />;
 
   const totalJobs = jobs.length;
   const activeJobs = jobs.filter((j) => j.status === "active").length;
@@ -141,7 +155,7 @@ export function PostedJobsPage() {
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Hero Header */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-sm mb-4">
             <Sparkles className="w-4 h-4" />
             <span>Job Management</span>
@@ -210,233 +224,276 @@ export function PostedJobsPage() {
           </Button>
         </div>
 
-        {/* Search & Filters */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/30 dark:border-gray-700/50 p-5 shadow-sm">
+        {/* Search & Filter Bar (matching JobsPage) */}
+        <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-xl p-5">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
-              <input
+              <Input
                 type="text"
                 placeholder="Search by job title or company..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:bg-white dark:focus:bg-gray-900 transition-all dark:text-white"
+                className="w-full pl-12 bg-gray-50/80 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 rounded-xl focus:border-purple-500 focus:ring-purple-500/20"
               />
             </div>
             <div className="flex gap-3">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all ${
-                  showFilters || activeFilterCount > 0
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-                }`}
+                className="gap-2 relative border-gray-200 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/30"
               >
                 <Filter className="w-4 h-4" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <span className="ml-1 w-5 h-5 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded-full text-xs flex items-center justify-center">
+                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-purple-600 text-white text-xs rounded-full flex items-center justify-center shadow-md">
                     {activeFilterCount}
                   </span>
                 )}
-              </button>
+              </Button>
               {activeFilterCount > 0 && (
-                <button
+                <Button
+                  variant="ghost"
                   onClick={clearFilters}
-                  className="flex items-center gap-1 px-4 py-2.5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                  className="gap-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                 >
                   <X className="w-4 h-4" />
                   Clear
-                </button>
+                </Button>
               )}
             </div>
           </div>
 
-          {/* Filter Panel */}
-          {showFilters && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800 animate-in fade-in slide-in-from-top duration-200">
-              <div className="flex flex-wrap gap-3">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-2 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 dark:text-white"
+          {/* Active Filters Chips */}
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-800/60">
+              {searchTerm && (
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
                 >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="draft">Draft</option>
-                  <option value="closed">Closed</option>
-                </select>
-              </div>
+                  <Search className="w-3 h-3" />
+                  <span>{searchTerm}</span>
+                  <button onClick={() => setSearchTerm("")} className="hover:text-purple-900">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              {statusFilter !== "all" && (
+                <Badge
+                  variant="secondary"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                >
+                  <Filter className="w-3 h-3" />
+                  <span className="capitalize">{statusFilter}</span>
+                  <button onClick={() => setStatusFilter("all")}>
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              <button
+                onClick={clearFilters}
+                className="text-sm text-gray-500 hover:text-purple-600 transition-colors ml-auto"
+              >
+                Clear all
+              </button>
             </div>
           )}
         </div>
 
-        {/* Jobs Grid */}
-        {paginatedJobs.length === 0 ? (
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/30 dark:border-gray-700/50 p-12 text-center shadow-sm">
-            <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Briefcase className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No jobs found
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
-              Get started by posting your first job
-            </p>
-            <Button onClick={() => setIsModalOpen(true)}>Post a Job</Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {paginatedJobs.map((job, index) => (
-              <div
-                key={job._id}
-                className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-white/30 dark:border-gray-700/50 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom duration-500"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center">
-                      <Briefcase className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white text-lg group-hover:text-purple-600 transition-colors">
-                        {job.title}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {job.company}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge
-                    variant={getStatusColor(job.status)}
-                    className="capitalize"
-                  >
-                    {getStatusText(job.status)}
-                  </Badge>
-                </div>
+        {/* Filter Panel (same as JobsPage – uses status pills) */}
+        {showFilters && (
+          <Card className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border border-gray-200/50 dark:border-gray-800/50 shadow-xl">
+            <CardContent className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-purple-500" />
+                  Refine Your Search
+                </h3>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
 
-                {/* Details */}
-                <div className="space-y-3 mb-4">
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5" /> {job.location}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />{" "}
-                      {formatEmploymentType(job.employmentType)}
-                    </span>
-                    {job.salaryMin && job.salaryMax && (
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="w-3.5 h-3.5" />
-                        {formatSalary(
-                          job.salaryMin,
-                          job.salaryMax,
-                          job.salaryCurrency,
-                        )}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {job.requiredSkills?.slice(0, 4).map((skill) => (
-                      <span
-                        key={skill}
-                        className="text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2.5 py-1 rounded-full"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                    {job.requiredSkills?.length > 4 && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 px-2.5 py-1 rounded-full">
-                        +{job.requiredSkills.length - 4} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Stats & Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-800">
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                      <Users className="w-4 h-4" /> {job.applicationsCount || 0}{" "}
-                      applicants
-                    </span>
-                    <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                      <Eye className="w-4 h-4" /> {job.viewsCount || 0} views
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4" /> Status
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {["all", "active", "draft", "closed"].map((status) => (
                     <button
-                      onClick={() => navigate(`/app/jobs/${job._id}`)}
-                      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                      title="View Details"
+                      key={status}
+                      onClick={() => setStatusFilter(status)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all capitalize ${statusFilter === status
+                        ? "bg-purple-600 text-white shadow-sm"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        }`}
                     >
-                      <Eye className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      {status === "all" ? "All" : status}
                     </button>
-                    <button
-                      onClick={() => handleEdit(job)}
-                      className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                      title="Edit Job"
-                    >
-                      <Edit className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                    </button>
-                    <button
-                      onClick={() => setJobToDelete(job)}
-                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                      title="Delete Job"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
-                    </button>
-                  </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center pt-4">
-            <div className="flex items-center gap-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 p-1">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        {/* Jobs Grid */}
+        {paginatedJobs.length === 0 ? (
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50">
+            <CardContent className="py-16 text-center">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Briefcase className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No jobs found</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">Get started by posting your first job</p>
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600"
               >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum;
-                if (totalPages <= 5) pageNum = i + 1;
-                else if (currentPage <= 3) pageNum = i + 1;
-                else if (currentPage >= totalPages - 2)
-                  pageNum = totalPages - 4 + i;
-                else pageNum = currentPage - 2 + i;
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`w-10 h-10 rounded-lg font-medium transition-all ${
-                      currentPage === pageNum
-                        ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
-                        : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
+                <Plus className="w-4 h-4 mr-2" />
+                Post a Job
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {paginatedJobs.map((job, index) => (
+                <div
+                  key={job._id}
+                  className="group bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-800/50 p-5 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom duration-500"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center shadow-inner">
+                        <Briefcase className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-lg group-hover:text-purple-600 transition-colors">
+                          {job.title}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{job.company}</p>
+                      </div>
+                    </div>
+                    <Badge variant={getStatusColor(job.status)} className="capitalize">
+                      {getStatusText(job.status)}
+                    </Badge>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-3 mb-4">
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5" /> {job.location}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" /> {formatEmploymentType(job.employmentType)}
+                      </span>
+                      {job.salaryMin && job.salaryMax && (
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-3.5 h-3.5" />
+                          {formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {job.requiredSkills?.slice(0, 4).map((skill) => (
+                        <span
+                          key={skill}
+                          className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                      {job.requiredSkills?.length > 4 && (
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
+                          +{job.requiredSkills.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stats & Actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-200 dark:border-gray-800">
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                        <Users className="w-4 h-4" /> {job.applicationsCount || 0} applicants
+                      </span>
+                      <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                        <Eye className="w-4 h-4" /> {job.viewsCount || 0} views
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => navigate(`/app/jobs/${job._id}`)}
+                        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(job)}
+                        className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                        title="Edit Job"
+                      >
+                        <Edit className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                      </button>
+                      <button
+                        onClick={() => setJobToDelete(job)}
+                        className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                        title="Delete Job"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+
+            {/* Pagination (shadcn/ui) */}
+            {totalPages > 1 && (
+              <Pagination className="justify-center mt-8">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) pageNum = i + 1;
+                    else if (currentPage <= 3) pageNum = i + 1;
+                    else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                    else pageNum = currentPage - 2 + i;
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink
+                          onClick={() => setCurrentPage(pageNum)}
+                          isActive={currentPage === pageNum}
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </>
         )}
       </div>
 

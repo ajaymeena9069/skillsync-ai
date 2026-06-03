@@ -22,7 +22,7 @@ export const generateRoadmap = async (userSkills, missingSkills, options = {}) =
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
       You are an AI career coach. Generate a personalized learning roadmap for a developer.
@@ -47,7 +47,8 @@ export const generateRoadmap = async (userSkills, missingSkills, options = {}) =
                 "title": "Specific actionable task",
                 "duration": "Xh",
                 "type": "Course|Project|Practice|Reading",
-                "resource": "Resource name or platform"
+                "resource": "Resource name or platform",
+                "url": "https://..."
               }
             ],
             "skills": ["Skill1", "Skill2"],
@@ -59,6 +60,7 @@ export const generateRoadmap = async (userSkills, missingSkills, options = {}) =
       }
 
       Rules:
+      1. For EVERY task, provide a real, highly relevant HTTPS URL in the "url" field (e.g., a direct link to a Udemy course, official documentation, or a targeted YouTube search link). Do NOT leave URLs blank.
       - Each week should focus on 1-2 related skills maximum
       - Tasks should be specific, actionable, and progressively build on each other
       - Include a mix of task types: courses, hands-on projects, practice exercises, reading
@@ -74,7 +76,7 @@ export const generateRoadmap = async (userSkills, missingSkills, options = {}) =
     const result = await Promise.race([
       model.generateContent(prompt),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("AI request timed out")), 20000),
+        setTimeout(() => reject(new Error("AI request timed out")), 45000),
       ),
     ]);
 

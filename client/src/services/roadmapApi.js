@@ -4,12 +4,12 @@ export const roadmapApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Generate learning roadmap (on-demand, POST)
     generateRoadmap: builder.mutation({
-      query: (options = {}) => ({
+      query: (body) => ({
         url: "/ai/roadmap",
         method: "POST",
-        body: options,
+        body,
       }),
-      invalidatesTags: ["Roadmap"],
+      invalidatesTags: ["Roadmap", "AiStatus"],
     }),
   }),
 });

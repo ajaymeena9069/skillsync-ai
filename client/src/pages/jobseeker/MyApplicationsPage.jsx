@@ -1,3 +1,4 @@
+// client/src/pages/MyApplicationsPage.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -16,8 +17,12 @@ import {
   TrendingUp,
   Award,
   ChevronRight,
+  AlertCircle,
+  Building2,
 } from "lucide-react";
-import { Button } from "../../components/Button";
+import { Button } from "../../components/ui/Button";
+import { Card, CardContent } from "../../components/ui/Card";
+import { Badge } from "../../components/ui/Badge";
 import { StatsCard } from "../../components/common/StatsCard";
 import {
   useGetMyApplicationsQuery,
@@ -26,12 +31,21 @@ import {
 import { toast } from "sonner";
 import { PageLoader } from "../../components/PageLoader";
 
-export default function MyApplicationsPage() {
+
+export function MyApplicationsPage() {
   const navigate = useNavigate();
   const [withdrawingId, setWithdrawingId] = useState(null);
 
   const { data, isLoading, refetch } = useGetMyApplicationsQuery();
   const [withdrawApplication] = useWithdrawApplicationMutation();
+  const [expandedCoverLetters, setExpandedCoverLetters] = useState({});
+
+  const toggleCoverLetter = (appId) => {
+    setExpandedCoverLetters((prev) => ({
+      ...prev,
+      [appId]: !prev[appId],
+    }));
+  };
 
   const applications = data?.data || [];
 
@@ -40,36 +54,31 @@ export default function MyApplicationsPage() {
       pending: {
         label: "Pending Review",
         icon: ClockIcon,
-        color:
-          "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800",
+        color: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400",
         gradient: "from-amber-500 to-orange-500",
       },
       reviewed: {
         label: "Under Review",
         icon: Eye,
-        color:
-          "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800",
+        color: "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400",
         gradient: "from-blue-500 to-cyan-500",
       },
       shortlisted: {
         label: "Shortlisted",
         icon: UserCheck,
-        color:
-          "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800",
+        color: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400",
         gradient: "from-purple-500 to-indigo-500",
       },
       rejected: {
         label: "Not Selected",
         icon: XCircle,
-        color:
-          "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
+        color: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400",
         gradient: "from-red-500 to-rose-500",
       },
       hired: {
         label: "Hired! 🎉",
         icon: CheckCircle,
-        color:
-          "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
+        color: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400",
         gradient: "from-emerald-500 to-teal-500",
       },
     };
@@ -148,15 +157,13 @@ export default function MyApplicationsPage() {
     },
   ];
 
-  if (isLoading) {
-    return <PageLoader />;
-  }
+  if (isLoading) return <PageLoader />;
 
   if (applications.length === 0) {
     return (
       <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center py-16 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm border border-gray-200 dark:bg-gray-800/80 dark:border-gray-700/50">
+          <div className="text-center py-16 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-800/50 shadow-sm">
             <div className="w-20 h-20 bg-gradient-to-br from-purple-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4 dark:from-purple-900/30 dark:to-indigo-900/30">
               <Briefcase className="w-10 h-10 text-purple-600 dark:text-purple-400" />
             </div>
@@ -207,7 +214,7 @@ export default function MyApplicationsPage() {
         </div>
 
         {/* Applications List */}
-        <div className="space-y-4">
+        <div className="space-y-5">
           {applications.map((application, index) => {
             const job = application.jobId;
             const statusConfig = getStatusConfig(application.status);
@@ -215,119 +222,127 @@ export default function MyApplicationsPage() {
             const canWithdraw = application.status === "pending";
 
             return (
-              <div
+              <Card
                 key={application._id}
-                className="group bg-white/80 backdrop-blur-sm rounded-2xl border border-white/30 p-6 shadow-sm dark:bg-gray-800/80 dark:border-gray-700/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom duration-500"
+                className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-200/50 dark:border-gray-800/50 rounded-2xl animate-in fade-in slide-in-from-bottom duration-500"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
-                  {/* Left Content */}
-                  <div className="flex-1">
-                    <div className="flex items-start gap-4">
-                      {/* Company Logo */}
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md transition-all dark:from-purple-900/30 dark:to-indigo-900/30">
-                        <Briefcase className="w-7 h-7 text-purple-600 dark:text-purple-400" />
+                <CardContent className="p-0">
+                  <div className="p-5 sm:p-6 space-y-4">
+                    {/* Header Row */}
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        {/* Company Avatar */}
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center flex-shrink-0 shadow-sm group-hover:shadow-md transition-all dark:from-purple-900/30 dark:to-indigo-900/30">
+                          <Building2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 text-lg group-hover:text-purple-600 transition-colors dark:text-white dark:group-hover:text-purple-400">
+                              {job?.title || "Job not found"}
+                            </h3>
+                            <div
+                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}
+                            >
+                              <StatusIcon className="w-3.5 h-3.5" />
+                              <span>{statusConfig.label}</span>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {job?.company || "Unknown Company"}
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="flex-1">
-                        {/* Title & Status */}
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-gray-900 text-lg group-hover:text-purple-600 transition-colors dark:text-white dark:group-hover:text-purple-400">
-                            {job?.title || "Job not found"}
-                          </h3>
-                          <div
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}
-                          >
-                            <StatusIcon className="w-3.5 h-3.5" />
-                            <span>{statusConfig.label}</span>
-                          </div>
-                        </div>
+                      {/* Match Score Badge */}
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-full shadow-sm self-start dark:from-purple-900/20 dark:to-indigo-900/20">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                        <span className="text-xs font-semibold text-purple-700 dark:text-purple-400">
+                          Match Score: {application.matchScore}%
+                        </span>
+                      </div>
+                    </div>
 
-                        <p className="text-sm text-gray-500 mb-3 dark:text-gray-400">
-                          {job?.company || "Unknown Company"}
+                    {/* Job Details Row */}
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
+                      {job?.location && (
+                        <span className="flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4 text-gray-400" />
+                          {job.location}
+                        </span>
+                      )}
+                      {job?.employmentType && (
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="w-4 h-4 text-gray-400" />
+                          {job.employmentType?.replace("-", " ")}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1.5">
+                        <DollarSign className="w-4 h-4 text-gray-400" />
+                        {formatSalary(job)}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <CalendarDays className="w-4 h-4 text-gray-400" />
+                        Applied {formatDate(application.createdAt)}
+                      </span>
+                    </div>
+
+                    {/* Cover Letter Preview */}
+                    {application.coverLetter && (
+                      <div className="mt-2 p-4 rounded-xl bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-4 h-4 text-purple-500" />
+                          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                            Cover Letter
+                          </p>
+                        </div>
+                        <p className={`text-sm text-gray-600 dark:text-gray-300 leading-relaxed ${!expandedCoverLetters[application._id] ? 'line-clamp-3' : 'whitespace-pre-wrap'}`}>
+                          {application.coverLetter}
                         </p>
+                        {application.coverLetter.length > 150 && (
+                          <button
+                            onClick={() => toggleCoverLetter(application._id)}
+                            className="mt-3 px-3.5 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/50 dark:hover:bg-purple-900/70 dark:text-purple-300 text-xs font-semibold rounded-full transition-all duration-200 focus:outline-none shadow-sm inline-block"
+                          >
+                            {expandedCoverLetters[application._id] ? "View Less" : "View More"}
+                          </button>
+                        )}
+                      </div>
+                    )}
 
-                        {/* Job Details */}
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                          {job?.location && (
-                            <span className="flex items-center gap-1.5">
-                              <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                              {job.location}
-                            </span>
-                          )}
-                          {job?.employmentType && (
-                            <span className="flex items-center gap-1.5">
-                              <Clock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                              {job.employmentType?.replace("-", " ")}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1.5">
-                            <DollarSign className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                            {formatSalary(job)}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <CalendarDays className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                            Applied {formatDate(application.createdAt)}
-                          </span>
-                        </div>
-
-                        {/* Match Score */}
-                        <div className="mt-3 flex items-center gap-2">
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-full dark:from-purple-900/20 dark:to-indigo-900/20">
-                            <Sparkles className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                            <span className="text-xs font-semibold text-purple-700 dark:text-purple-400">
-                              Match Score: {application.matchScore}%
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Cover Letter Preview */}
-                        {application.coverLetter && (
-                          <div className="mt-4 p-4 bg-gradient-to-r from-gray-50 to-gray-50/50 rounded-xl border border-gray-200 dark:from-gray-900/50 dark:to-gray-900/30 dark:border-gray-800">
-                            <div className="flex items-center gap-2 mb-2">
-                              <FileText className="w-4 h-4 text-purple-500 dark:text-purple-400" />
-                              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                                Cover Letter
-                              </p>
-                            </div>
-                            <p className="text-sm text-gray-600 leading-relaxed dark:text-gray-400">
-                              {application.coverLetter.length > 180
-                                ? application.coverLetter.substring(0, 180) +
-                                  "..."
-                                : application.coverLetter}
-                            </p>
-                          </div>
+                    {/* Action Buttons */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>Application ID: {application._id.slice(-8)}</span>
+                      </div>
+                      <div className="flex gap-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/app/jobs/${job?._id}`)}
+                          className="gap-2 border-gray-300 dark:border-gray-700 hover:border-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View Job
+                        </Button>
+                        {canWithdraw && (
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleWithdraw(application._id)}
+                            isLoading={withdrawingId === application._id}
+                            className="gap-2 bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Withdraw
+                          </Button>
                         )}
                       </div>
                     </div>
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-row lg:flex-col gap-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/app/jobs/${job?._id}`)}
-                      className="gap-2 border-gray-200 hover:border-purple-200 hover:bg-purple-50 transition-all dark:border-gray-700 dark:hover:border-purple-700 dark:hover:bg-purple-900/20"
-                    >
-                      <Eye className="w-4 h-4" />
-                      View Job
-                    </Button>
-                    {canWithdraw && (
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={() => handleWithdraw(application._id)}
-                        isLoading={withdrawingId === application._id}
-                        className="gap-2 bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30"
-                      >
-                        <XCircle className="w-4 h-4" />
-                        Withdraw
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             );
           })}
         </div>

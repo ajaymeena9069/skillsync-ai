@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { Button } from "./Button";
 import { useGetCandidateMatchAnalysisQuery } from "../services/matchApi";
+import { AiLoadingState } from "./AiLoadingState";
+import { RefreshCw } from "lucide-react";
 
 export function AIAnalysisModal({
     isOpen,
@@ -29,11 +31,18 @@ export function AIAnalysisModal({
     jobTitle,
 }) {
     const [shouldFetch, setShouldFetch] = useState(false);
-    const { data, isLoading, refetch } = useGetCandidateMatchAnalysisQuery(applicationId, {
-        skip: !shouldFetch,
-    });
+    const [forceRegenerate, setForceRegenerate] = useState(false);
+    
+    const { data, isLoading: initialLoading, isFetching, refetch } = useGetCandidateMatchAnalysisQuery(
+        { applicationId, force: forceRegenerate },
+        { skip: !shouldFetch }
+    );
+    
+    const isLoading = initialLoading || isFetching;
 
     const analysis = data?.data;
+    const isRateLimited = data?.isRateLimited;
+    const isCached = data?.isCached;
 
     useEffect(() => {
         if (isOpen && !shouldFetch) {
@@ -130,13 +139,7 @@ export function AIAnalysisModal({
                             </div>
 
                             {isLoading ? (
-                                <div className="flex flex-col items-center justify-center py-12">
-                                    <div className="relative">
-                                        <div className="absolute inset-0 rounded-full bg-purple-500/20 blur-xl animate-pulse" />
-                                        <Loader2 className="w-10 h-10 text-purple-600 animate-spin relative" />
-                                    </div>
-                                    <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">AI is analyzing candidate fit...</p>
-                                </div>
+                                <AiLoadingState type="match" />
                             ) : analysis ? (
                                 <div className="space-y-6">
                                     {/* Score Card – Modern, elegant */}
@@ -322,8 +325,23 @@ export function AIAnalysisModal({
                                 </div>
                             )}
 
-                            <div className="flex justify-end gap-3 pt-2 pb-2">
-                                <Button variant="outline" onClick={onClose}>
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                {analysis && (
+                                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                                        <Button
+                                            onClick={() => {
+                                                setForceRegenerate(true);
+                                                refetch();
+                                            }}
+                                            disabled={isRateLimited || isLoading}
+                                            className="gap-2 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50 w-full sm:w-auto disabled:opacity-50"
+                                        >
+                                            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                                            {isRateLimited ? "Available in 24h" : "Regenerate Analysis"}
+                                        </Button>
+                                    </div>
+                                )}
+                                <Button variant="outline" onClick={onClose} className="w-full sm:w-auto mt-4 sm:mt-0">
                                     Close
                                 </Button>
                             </div>

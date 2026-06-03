@@ -10,6 +10,7 @@ import {
   resetPassword,
   getMe,
   logout,
+  upgradeDeveloper,
 } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { validate } from "../middleware/validate.middleware.js";
@@ -40,5 +41,6 @@ router.post("/reset-password", validate(resetPasswordSchema), resetPassword);
 // Protected routes
 router.get("/me", protect, getMe);
 router.post("/logout", protect, logout);
+router.post("/upgrade-developer", protect, upgradeDeveloper);
 
 export default router;

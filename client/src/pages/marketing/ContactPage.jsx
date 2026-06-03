@@ -22,6 +22,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { Badge } from "../../components/Badge";
 import { Input } from "../../components/Input";
+import contactInfo from "../../data/contactInfo.json";
 
 export function ContactPage() {
   const navigate = useNavigate();
@@ -32,28 +33,28 @@ export function ContactPage() {
       icon: Mail,
       title: "Email",
       description: "Get in touch for questions or collaboration",
-      value: "contact@skillsync.dev",
+      value: contactInfo.emails.contact,
       action: "Send Email",
       color: "from-purple-500 to-indigo-500",
-      link: "mailto:contact@skillsync.dev",
+      link: `mailto:${contactInfo.emails.contact}`,
     },
     {
       icon: GitBranch,
       title: "GitHub",
       description: "View source code and contribute",
-      value: "github.com/skillsync-ai",
+      value: contactInfo.socialLinks.github.display,
       action: "View Repository",
       color: "from-gray-600 to-gray-800",
-      link: "https://github.com",
+      link: contactInfo.socialLinks.github.url,
     },
     {
       icon: Link,
       title: "LinkedIn",
       description: "Connect for professional networking",
-      value: "Connect on LinkedIn",
+      value: contactInfo.socialLinks.linkedin.display,
       action: "View Profile",
       color: "from-blue-500 to-cyan-500",
-      link: "https://linkedin.com",
+      link: contactInfo.socialLinks.linkedin.url,
     },
   ];
 
@@ -61,20 +62,20 @@ export function ContactPage() {
     {
       icon: Briefcase,
       title: "Project Inquiries",
-      email: "project@skillsync.dev",
+      email: contactInfo.emails.project,
       description:
         "Questions about the technical implementation or architecture",
     },
     {
       icon: HelpCircle,
       title: "Technical Support",
-      email: "support@skillsync.dev",
+      email: contactInfo.emails.support,
       description: "Bug reports, feature requests, or usage questions",
     },
     {
       icon: Users,
       title: "Collaboration",
-      email: "collaborate@skillsync.dev",
+      email: contactInfo.emails.collaborate,
       description: "Open source contributions or project collaboration",
     },
   ];
@@ -275,7 +276,7 @@ export function ContactPage() {
                 documentation, and contribute on GitHub.
               </p>
               <a
-                href="https://github.com"
+                href={contactInfo.socialLinks.github.url}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -293,19 +294,25 @@ export function ContactPage() {
               </h3>
               <div className="flex gap-3">
                 <a
-                  href="#"
+                  href={contactInfo.socialLinks.twitter.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:text-purple-600 transition-all"
                 >
                   <Share2 className="w-4 h-4" />
                 </a>
                 <a
-                  href="#"
+                  href={contactInfo.socialLinks.linkedin.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:text-purple-600 transition-all"
                 >
                   <Link className="w-4 h-4" />
                 </a>
                 <a
-                  href="#"
+                  href={contactInfo.socialLinks.github.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:text-purple-600 transition-all"
                 >
                   <GitBranch className="w-4 h-4" />

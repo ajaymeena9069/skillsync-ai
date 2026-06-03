@@ -1,5 +1,5 @@
-// client/src/pages/AnalyticsPage.jsx
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   TrendingUp,
   Users,
@@ -39,8 +39,8 @@ import {
 } from "recharts";
 
 export function AnalyticsPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState("week");
-  const { data: analyticsRes, isLoading } = useGetAnalyticsQuery();
+  const [selectedPeriod, setSelectedPeriod] = useState("month");
+  const { data: analyticsRes, isLoading } = useGetAnalyticsQuery(selectedPeriod);
   const analyticsData = analyticsRes?.data || null;
 
   if (isLoading) {
@@ -158,6 +158,7 @@ export function AnalyticsPage() {
               ))}
             </div>
             <Button
+              onClick={() => toast.info("Currently disabled, we will implement in future")}
               variant="outline"
               className="gap-2 border-gray-200 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
             >
@@ -182,14 +183,14 @@ export function AnalyticsPage() {
               <div className="flex items-center gap-2">
                 <LineChart className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 <h3 className="font-semibold text-gray-900 dark:text-white">
-                  Monthly Trends
+                  Trends ({selectedPeriod.charAt(0).toUpperCase() + selectedPeriod.slice(1)})
                 </h3>
               </div>
               <Badge
                 variant="primary"
                 className="text-xs bg-white/80 dark:bg-purple-900/50"
               >
-                Last 6 months
+                Applications & Views
               </Badge>
             </div>
             <div className="w-full overflow-x-auto">
@@ -223,7 +224,7 @@ export function AnalyticsPage() {
                   stroke="#E5E7EB"
                   strokeOpacity={0.3}
                 />
-                <XAxis dataKey="month" stroke="#9CA3AF" fontSize={12} />
+                <XAxis dataKey="name" stroke="#9CA3AF" fontSize={12} />
                 <YAxis stroke="#9CA3AF" fontSize={12} />
                 <Tooltip
                   contentStyle={{

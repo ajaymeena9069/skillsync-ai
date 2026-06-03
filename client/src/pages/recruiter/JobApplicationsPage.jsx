@@ -34,7 +34,7 @@ import {
 } from "../../services/applicationApi";
 import { toast } from "sonner";
 
-export default function JobApplicationsPage() {
+export function JobApplicationsPage() {
   const { jobId } = useParams();
   const navigate = useNavigate();
   const [selectedApp, setSelectedApp] = useState(null);
@@ -42,6 +42,14 @@ export default function JobApplicationsPage() {
 
   const { data, isLoading, refetch } = useGetJobApplicationsQuery(jobId);
   const [updateStatus] = useUpdateApplicationStatusMutation();
+  const [expandedCoverLetters, setExpandedCoverLetters] = useState({});
+
+  const toggleCoverLetter = (appId) => {
+    setExpandedCoverLetters((prev) => ({
+      ...prev,
+      [appId]: !prev[appId],
+    }));
+  };
 
   const applications = data?.data || [];
   const job = data?.job;
@@ -319,9 +327,17 @@ export default function JobApplicationsPage() {
                           Cover Letter
                         </p>
                       </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed line-clamp-2">
+                      <p className={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed ${!expandedCoverLetters[application._id] ? 'line-clamp-2' : 'whitespace-pre-wrap'}`}>
                         {application.coverLetter}
                       </p>
+                      {application.coverLetter.length > 100 && (
+                        <button
+                          onClick={() => toggleCoverLetter(application._id)}
+                          className="mt-3 px-3.5 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/50 dark:hover:bg-purple-900/70 dark:text-purple-300 text-xs font-semibold rounded-full transition-all duration-200 focus:outline-none shadow-sm inline-block"
+                        >
+                          {expandedCoverLetters[application._id] ? "View Less" : "View More"}
+                        </button>
+                      )}
                     </div>
                   )}
 

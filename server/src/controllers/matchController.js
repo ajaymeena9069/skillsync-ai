@@ -1,5 +1,6 @@
 import Resume from "../models/Resume.js";
 import Job from "../models/Job.js";
+import User from "../models/User.js";
 import Application from "../models/Application.js";
 import {
   getAIMatchAnalysis,
@@ -9,6 +10,10 @@ import {
 export const getCandidateMatchAnalysis = async (req, res) => {
   try {
     const { applicationId } = req.params;
+    const { force } = req.query;
+    
+    const isAdminKeyValid = req.user?.isDeveloper === true;
+    const now = new Date();
     const application = await Application.findById(applicationId)
       .populate("userId", "name email skills")
       .populate(
@@ -21,6 +26,47 @@ export const getCandidateMatchAnalysis = async (req, res) => {
         success: false,
         message: "Application not found",
       });
+    }
+
+    // Check if AI analysis is already cached
+    let isRateLimited = false;
+    
+    if (application.aiAnalysis?.data) {
+      const generatedAt = new Date(application.aiAnalysis.generatedAt);
+      const isUnder24Hours = (now - generatedAt) < 24 * 60 * 60 * 1000;
+      isRateLimited = isUnder24Hours && !isAdminKeyValid;
+
+      // If user is forcing a generation but is rate limited, block it
+      if (force === "true" && isRateLimited) {
+        return res.status(429).json({
+          success: false,
+          message: "Please wait 24 hours before re-analyzing this candidate.",
+        });
+      }
+
+      // If not forcing (just viewing), OR if forcing but rate limited (blocked above), 
+      // wait, if force="true" and NOT rate limited, we skip this block and generate fresh data!
+      if (force !== "true") {
+        return res.json({
+          success: true,
+          data: {
+            ...application.aiAnalysis.data,
+            candidate: {
+              id: application.userId._id,
+              name: application.userId.name,
+              email: application.userId.email,
+              skills: application.userId.skills,
+            },
+            job: {
+              id: application.jobId._id,
+              title: application.jobId.title,
+              requiredSkills: application.jobId.requiredSkills,
+            },
+          },
+          isCached: true,
+          isRateLimited,
+        });
+      }
     }
 
     // Get candidate's resume data
@@ -48,6 +94,13 @@ export const getCandidateMatchAnalysis = async (req, res) => {
 
     // Get AI-powered analysis
     const analysis = await getAIMatchAnalysis(userResume, job);
+
+    // Cache the analysis
+    application.aiAnalysis = {
+      data: analysis,
+      generatedAt: new Date(),
+    };
+    await application.save();
 
     res.json({
       success: true,
@@ -188,6 +241,30 @@ export const getDetailedMatch = async (req, res) => {
       });
     }
 
+    // Check if AI analysis is already cached in application
+    const application = await Application.findOne({ userId: candidateId, jobId });
+    if (application?.aiAnalysis?.data) {
+      return res.json({
+        success: true,
+        data: {
+          ...application.aiAnalysis.data,
+          candidate: {
+            id: candidateId,
+            name: user?.name,
+            email: user?.email,
+            skills: user?.skills,
+          },
+          job: {
+            id: job._id,
+            title: job.title,
+            requiredSkills: job.requiredSkills,
+            preferredSkills: job.preferredSkills,
+          },
+        },
+        isCached: true,
+      });
+    }
+
     // Prepare resume data
     const userResume = {
       parsedSkills: resume?.parsedSkills || user?.skills || [],
@@ -198,6 +275,15 @@ export const getDetailedMatch = async (req, res) => {
 
     // Get AI analysis
     const analysis = await getAIMatchAnalysis(userResume, job);
+
+    // Cache the analysis
+    if (application) {
+      application.aiAnalysis = {
+        data: analysis,
+        generatedAt: new Date(),
+      };
+      await application.save();
+    }
 
     res.json({
       success: true,

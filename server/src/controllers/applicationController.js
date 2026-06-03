@@ -301,9 +301,21 @@ export const withdrawApplication = async (req, res) => {
 
     await application.deleteOne();
 
-    await Job.findByIdAndUpdate(application.jobId, {
+    const job = await Job.findByIdAndUpdate(application.jobId, {
       $inc: { applicationsCount: -1 },
     });
+
+    if (job) {
+      await createNotification({
+        recipient: job.recruiterId,
+        sender: req.user._id,
+        type: "application_withdrawn",
+        title: "Application Withdrawn",
+        message: `${req.user?.name || "A candidate"} withdrew their application for ${job.title}`,
+        link: `/app/jobs/${job._id}`,
+        metadata: { jobId: job._id },
+      });
+    }
 
     res.json({
       success: true,

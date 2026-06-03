@@ -1,0 +1,30 @@
+{
+  "companyName": "SkillSync AI",
+  "tagline": "Career Intelligence",
+  "description": "AI-powered career transformation platform helping job seekers find perfect opportunities and bridge skill gaps.",
+  "emails": {
+    "general": "hello@skillsync.ai",
+    "contact": "contact@skillsync.dev",
+    "project": "project@skillsync.dev",
+    "support": "support@skillsync.dev",
+    "collaborate": "collaborate@skillsync.dev"
+  },
+  "phone": "+1 (555) 123-4567",
+  "socialLinks": {
+    "github": {
+      "url": "https://github.com",
+      "display": "github.com/skillsync-ai"
+    },
+    "linkedin": {
+      "url": "https://linkedin.com",
+      "display": "Connect on LinkedIn"
+    },
+    "twitter": {
+      "url": "#"
+    },
+    "instagram": {
+      "url": "#"
+    }
+  },
+  "copyrightYear": "2026"
+}

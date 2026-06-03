@@ -117,8 +117,26 @@ export const getJobById = async (req, res) => {
     // Increment view count if the user is not the recruiter who posted the job
     const isOwner = req.user && req.user._id.toString() === job.recruiterId._id.toString();
     if (!isOwner) {
-      job.viewsCount = (job.viewsCount || 0) + 1;
-      await job.save();
+      let shouldSave = false;
+
+      if (req.user) {
+        // Enforce unique views per candidate
+        const hasViewed = job.viewedBy && job.viewedBy.some(id => id.toString() === req.user._id.toString());
+        if (!hasViewed) {
+          if (!job.viewedBy) job.viewedBy = [];
+          job.viewedBy.push(req.user._id);
+          job.viewsCount = (job.viewsCount || 0) + 1;
+          shouldSave = true;
+        }
+      } else {
+        // Allow anonymous views to increment normally (or could restrict by IP if needed)
+        job.viewsCount = (job.viewsCount || 0) + 1;
+        shouldSave = true;
+      }
+
+      if (shouldSave) {
+        await job.save();
+      }
     }
 
     res.json({ success: true, data: job });

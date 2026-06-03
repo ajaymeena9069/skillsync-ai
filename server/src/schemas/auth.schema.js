@@ -21,12 +21,12 @@ const nameSchema = z
   .max(50, "Name is too long")
   .transform((val) => val.trim());
 
-// Register Schema
 export const registerSchema = z.object({
   name: nameSchema,
   email: emailSchema,
   password: passwordSchema,
   role: z.enum(["jobseeker", "recruiter"]).optional().default("jobseeker"),
+  adminKey: z.string().optional(),
 });
 
 // Login Schema

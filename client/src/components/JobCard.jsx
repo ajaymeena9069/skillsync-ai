@@ -10,10 +10,13 @@ import {
   Building2,
   Sparkles,
   Users,
+  Eye,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
-import { Card } from "../components/Card";
-import { Badge } from "../components/Badge";
-import { Button } from "../components/Button";
+import { Card, CardContent, CardFooter } from "../components/ui/Card";
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
 import { useJobMatch } from "../hooks/useJobMatch";
 import { ApplyModal } from "../components/ApplyModal";
 import { useApplyForJobMutation } from "../services/applicationApi";
@@ -41,7 +44,6 @@ export function JobCard({
   const formatSalary = () => {
     const { salaryMin, salaryMax, salaryCurrency } = job;
     if (!salaryMin && !salaryMax) return "Not disclosed";
-
     const symbol =
       { INR: "₹", USD: "$", EUR: "€", GBP: "£" }[salaryCurrency] || "$";
     if (salaryMin && salaryMax)
@@ -53,9 +55,7 @@ export function JobCard({
   const formatTime = () => {
     const date = job.postedAt || job.createdAt;
     if (!date) return "Recently";
-    const diff = Math.floor(
-      (new Date() - new Date(date)) / (1000 * 60 * 60 * 24),
-    );
+    const diff = Math.floor((new Date() - new Date(date)) / (1000 * 60 * 60 * 24));
     if (diff === 0) return "Today";
     if (diff === 1) return "Yesterday";
     if (diff < 7) return `${diff} days ago`;
@@ -66,7 +66,7 @@ export function JobCard({
   const getMatchScoreColor = (score) => {
     if (score >= 70) return "success";
     if (score >= 40) return "warning";
-    return "default";
+    return "secondary";
   };
 
   const handleSave = () => {
@@ -82,31 +82,19 @@ export function JobCard({
     }
   };
 
-  // ✅ Get recruiterId dynamically from job object
+  const handleViewJob = () => {
+    navigate(`/app/jobs/${job._id}`);
+  };
+
   const handleViewCompany = () => {
     let recruiterId = null;
-    
-    // Check multiple possible locations for recruiterId
     if (job.recruiterId) {
-      if (typeof job.recruiterId === 'object') {
-        recruiterId = job.recruiterId._id || job.recruiterId.id;
-      } else {
-        recruiterId = job.recruiterId;
-      }
+      recruiterId = typeof job.recruiterId === "object" ? job.recruiterId._id || job.recruiterId.id : job.recruiterId;
     } else if (job.recruiter) {
-      if (typeof job.recruiter === 'object') {
-        recruiterId = job.recruiter._id || job.recruiter.id;
-      } else {
-        recruiterId = job.recruiter;
-      }
+      recruiterId = typeof job.recruiter === "object" ? job.recruiter._id || job.recruiter.id : job.recruiter;
     } else if (job.companyId) {
-      if (typeof job.companyId === 'object') {
-        recruiterId = job.companyId._id || job.companyId.id;
-      } else {
-        recruiterId = job.companyId;
-      }
+      recruiterId = typeof job.companyId === "object" ? job.companyId._id || job.companyId.id : job.companyId;
     }
-    
     if (recruiterId) {
       navigate(`/app/companies/${recruiterId}`);
     } else {
@@ -114,18 +102,9 @@ export function JobCard({
     }
   };
 
-  // ✅ View job details
-  const handleViewJob = () => {
-    navigate(`/app/jobs/${job._id}`);
-  };
-
   const handleApplySubmit = async (data) => {
     try {
-      await applyJob({
-        jobId: job._id,
-        coverLetter: data.coverLetter,
-      }).unwrap();
-
+      await applyJob({ jobId: job._id, coverLetter: data.coverLetter }).unwrap();
       toast.success("Application submitted successfully!");
       setShowApplyModal(false);
     } catch (error) {
@@ -136,34 +115,22 @@ export function JobCard({
   // Compact variant
   if (variant === "compact") {
     return (
-      <Card
-        hover
-        className="p-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50"
-      >
+      <Card className="p-3 hover:shadow-md transition-all duration-200 rounded-xl">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center shrink-0">
             <Briefcase className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate">
-              {job.title}
-            </h4>
-            <button
-              onClick={handleViewJob}
-              className="text-xs text-gray-500 dark:text-gray-400 truncate hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
-              title="View job details"
-            >
+            <h4 className="font-medium text-gray-900 dark:text-white text-sm truncate">{job.title}</h4>
+            <button onClick={handleViewJob} className="text-xs text-gray-500 dark:text-gray-400 truncate hover:text-purple-600 transition-colors">
               {job.company}
             </button>
-            <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-gray-500">
+            <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
               <span className="flex items-center gap-0.5">
                 <MapPin className="w-3 h-3" /> {job.location?.split(",")[0]}
               </span>
               {match && (
-                <Badge
-                  variant={getMatchScoreColor(match.score)}
-                  className="text-xs px-1.5 py-0.5"
-                >
+                <Badge variant={getMatchScoreColor(match.score)} className="text-xs px-1.5 py-0.5 rounded-full">
                   {match.score}%
                 </Badge>
               )}
@@ -177,37 +144,26 @@ export function JobCard({
   // Minimal variant
   if (variant === "minimal") {
     return (
-      <Card
-        hover
-        className="p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50"
-      >
-        <div className="flex items-center justify-between">
+      <Card className="p-4 hover:shadow-md transition-all rounded-xl">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
               <Briefcase className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <h3 className="font-medium text-gray-900 dark:text-white">
-                {job.title}
-              </h3>
-              <button
-                onClick={handleViewJob}
-                className="text-sm text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
-              >
+              <h3 className="font-medium text-gray-900 dark:text-white">{job.title}</h3>
+              <button onClick={handleViewJob} className="text-sm text-gray-500 hover:text-purple-600 transition-colors">
                 {job.company}
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {match && (
-              <Badge
-                variant={getMatchScoreColor(match.score)}
-                className="font-medium"
-              >
+              <Badge variant={getMatchScoreColor(match.score)} className="font-medium rounded-full">
                 {match.score}% Match
               </Badge>
             )}
-            <Button size="sm" onClick={handleApplyClick}>
+            <Button size="sm" onClick={handleApplyClick} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700">
               Apply
             </Button>
           </div>
@@ -216,171 +172,166 @@ export function JobCard({
     );
   }
 
-  // Default full view
+  // Default detailed view (improved)
   return (
     <>
-      <Card
-        hover
-        className="p-5 group transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700/50"
-      >
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-start gap-3">
-              <div className="w-14 h-14 rounded-full shadow-sm shrink-0">
-                <OptimizedAvatar 
-                  src={job.recruiterId?.company?.logo} 
-                  alt={job.company} 
-                  fallbackText={job.company?.charAt(0)?.toUpperCase()}
-                  className="w-full h-full"
-                  size={150}
-                />
-              </div>
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={handleViewJob}
-                    className="font-semibold text-gray-900 dark:text-white text-lg hover:text-purple-600 transition-colors text-left"
-                  >
-                    {job.title}
-                  </button>
-                  {job.isUrgent && (
-                    <Badge variant="danger" size="sm" className="animate-pulse">
-                      Urgent
-                    </Badge>
-                  )}
-                  {job.isFeatured && (
-                    <Badge variant="primary" size="sm">
-                      Featured
-                    </Badge>
-                  )}
+      <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-200/50 dark:border-gray-800/50 rounded-2xl">
+        <CardContent className="p-0">
+          <div className="p-5 space-y-4">
+            {/* Header row: circular avatar, title, match badge */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4">
+                {/* Circular Avatar (restored) */}
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 flex items-center justify-center shrink-0 shadow-sm overflow-hidden ring-2 ring-white dark:ring-gray-800">
+                  <OptimizedAvatar
+                    src={job.recruiterId?.company?.logo}
+                    alt={job.company}
+                    fallbackText={job.company?.charAt(0)?.toUpperCase()}
+                    className="w-full h-full object-cover"
+                    size={150}
+                  />
                 </div>
-                <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                  <button
-                    onClick={handleViewCompany}
-                    className="text-sm text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer"
-                    title="View company profile"
-                  >
-                    {job.company}
-                  </button>
-                  <span className="text-xs text-gray-300 dark:text-gray-600">
-                    •
-                  </span>
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                    {job.employmentType?.replace("-", " ") || "Full-time"}
-                  </span>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" /> {job.location}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Globe className="w-3.5 h-3.5" />{" "}
-                    {job.locationType === "remote"
-                      ? "Remote"
-                      : job.locationType === "hybrid"
-                        ? "Hybrid"
-                        : "Onsite"}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <DollarSign className="w-3.5 h-3.5" /> {formatSalary()}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <CalendarDays className="w-3.5 h-3.5" /> Posted{" "}
-                    {formatTime()}
-                  </span>
-                  {(job.applicationCount !== undefined || job.applicationsCount !== undefined) && (
-                    <span className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-900/30 px-2.5 py-0.5 rounded-md border border-purple-100 dark:border-purple-800/30">
-                      <Users className="w-3.5 h-3.5" /> 
-                      {job.applicationCount ?? job.applicationsCount} Applications
+                <div className="pt-0.5">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <button
+                      onClick={handleViewJob}
+                      className="font-bold text-gray-900 dark:text-white text-xl hover:text-purple-600 transition-colors text-left line-clamp-1"
+                    >
+                      {job.title}
+                    </button>
+                    {job.isUrgent && (
+                      <Badge variant="danger" className="animate-pulse text-[10px] px-2 py-0.5 uppercase tracking-wider rounded-full">
+                        Urgent
+                      </Badge>
+                    )}
+                    {job.isFeatured && (
+                      <Badge variant="primary" className="text-[10px] px-2 py-0.5 uppercase tracking-wider rounded-full">
+                        Featured
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
+                    <button
+                      onClick={handleViewCompany}
+                      className="font-medium text-gray-700 dark:text-gray-300 hover:text-purple-600 transition-colors"
+                    >
+                      {job.company}
+                    </button>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" /> {job.location}
                     </span>
-                  )}
+                    <span className="hidden sm:inline">•</span>
+                    <span className="capitalize hidden sm:inline">{job.employmentType?.replace("-", " ") || "Full-time"}</span>
+                  </div>
                 </div>
+              </div>
+              {/* Match badge - desktop */}
+              {match && (
+                <div className="shrink-0 hidden sm:block">
+                  <Badge
+                    variant={getMatchScoreColor(match.score)}
+                    className="font-semibold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {match.score}% Match
+                  </Badge>
+                </div>
+              )}
+            </div>
+
+            {/* Key info row with glass effect */}
+            <div className="flex flex-wrap gap-4 p-3 rounded-xl bg-gray-50/80 dark:bg-gray-800/40 border border-gray-100 dark:border-gray-800/60">
+              <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <DollarSign className="w-4 h-4 text-emerald-500" />
+                <span className="font-medium">{formatSalary()}</span>
+              </div>
+              <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 hidden sm:block" />
+              <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <Globe className="w-4 h-4 text-blue-500" />
+                <span className="font-medium">
+                  {job.locationType === "remote" ? "Remote" : job.locationType === "hybrid" ? "Hybrid" : "Onsite"}
+                </span>
+              </div>
+              <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 hidden sm:block" />
+              <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <CalendarDays className="w-4 h-4 text-orange-500" />
+                <span className="font-medium">Posted {formatTime()}</span>
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-row sm:flex-col items-center gap-3">
-            {match && (
-              <Badge
-                variant={getMatchScoreColor(match.score)}
-                className="font-semibold px-3 py-1.5 flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3" />
-                {match.score}% Match
-              </Badge>
+            {/* Description */}
+            {job.description && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed line-clamp-2">
+                {job.description}
+              </p>
             )}
-          </div>
-        </div>
 
-        {job.requiredSkills?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-4">
-            {job.requiredSkills.slice(0, 6).map((skill) => {
-              const isMatched = match?.matchedSkills?.some(
-                (ms) => ms.toLowerCase() === skill.toLowerCase(),
-              );
-              return (
-                <span
-                  key={skill}
-                  className={`text-xs px-2.5 py-1 rounded-full transition-all ${
-                    isMatched
-                      ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
-                      : "text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800"
-                  }`}
-                >
-                  {skill}
-                  {isMatched && (
-                    <span className="ml-1 text-purple-500 dark:text-purple-400">
-                      ✓
+            {/* Skills */}
+            {job.requiredSkills?.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {job.requiredSkills.slice(0, 5).map((skill) => {
+                  const isMatched = match?.matchedSkills?.some((ms) => ms.toLowerCase() === skill.toLowerCase());
+                  return (
+                    <span
+                      key={skill}
+                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${isMatched
+                          ? "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 ring-1 ring-purple-300 dark:ring-purple-700"
+                          : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                        }`}
+                    >
+                      {skill}
+                      {isMatched && <CheckCircle2 className="inline w-3 h-3 ml-1 text-purple-600" />}
                     </span>
-                  )}
+                  );
+                })}
+                {job.requiredSkills.length > 5 && (
+                  <span className="text-xs px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 font-medium">
+                    +{job.requiredSkills.length - 5}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Missing skills warning */}
+            {match?.missingSkills?.length > 0 && (
+              <div className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-2.5 rounded-lg border border-amber-100 dark:border-amber-900/30">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>
+                  Missing core skills: <span className="font-semibold">{match.missingSkills.slice(0, 3).join(", ")}</span>
+                  {match.missingSkills.length > 3 && ` +${match.missingSkills.length - 3}`}
                 </span>
-              );
-            })}
-            {job.requiredSkills.length > 6 && (
-              <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 px-2.5 py-1 rounded-full">
-                +{job.requiredSkills.length - 6} more
-              </span>
+              </div>
             )}
           </div>
-        )}
-
-        {match?.missingSkills?.length > 0 && (
-          <div className="mt-3 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-            <span className="text-yellow-500 dark:text-yellow-400">⚠️</span>
-            <span>
-              Missing: {match.missingSkills.slice(0, 3).join(", ")}
-              {match.missingSkills.length > 3 &&
-                ` +${match.missingSkills.length - 3} more`}
-            </span>
-          </div>
-        )}
-
-        {job.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-3 line-clamp-2">
-            {job.description.substring(0, 200)}...
-          </p>
-        )}
+        </CardContent>
 
         {showActions && (
-          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <div className="flex gap-2">
+          <CardFooter className="px-5 py-4 bg-gray-50/80 dark:bg-gray-800/40 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row justify-between gap-3 rounded-b-2xl">
+            <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex -space-x-2">
+                <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-900"></div>
+                <div className="w-6 h-6 rounded-full bg-gray-300 dark:bg-gray-600 border-2 border-white dark:border-gray-900"></div>
+                <div className="w-6 h-6 rounded-full bg-gray-400 dark:bg-gray-500 border-2 border-white dark:border-gray-900"></div>
+              </div>
+              <span>{job.applicationsCount || 0} applicants</span>
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               <Button
-                size="sm"
                 variant="outline"
                 onClick={handleViewJob}
-                className="text-sm"
+                className="flex-1 sm:flex-none border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
               >
-                View Details
+                <Eye className="w-4 h-4 mr-1" /> Details
+              </Button>
+              <Button
+                onClick={handleApplyClick}
+                className="flex-1 sm:flex-none bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-sm transition-all"
+              >
+                Apply Now
               </Button>
             </div>
-            <Button
-              size="sm"
-              onClick={handleApplyClick}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-            >
-              Apply Now
-            </Button>
-          </div>
+          </CardFooter>
         )}
       </Card>
 

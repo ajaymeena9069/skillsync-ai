@@ -17,7 +17,6 @@ import {
   Moon,
   Sun,
   ChevronRight,
-  Globe,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useGetNotificationsQuery } from "../services/notificationApi";
@@ -49,7 +48,7 @@ export function Sidebar({
   const [isMinimized, setIsMinimized] = useState(() => {
     if (!isDesktop) return false;
     const saved = localStorage.getItem("sidebarMinimized");
-    return saved !== "false"; // Default to true if not explicitly false
+    return saved !== "false";
   });
 
   const { data: notificationsData } = useGetNotificationsQuery(undefined, {
@@ -273,7 +272,10 @@ export function Sidebar({
                   title={isMinimized && isDesktop ? item.label : ""}
                 >
                   <Icon
-                    className={`w-5 h-5 transition-all duration-200 shrink-0 ${isActive ? "text-white" : "text-white/60 group-hover:text-white"}`}
+                    className={`w-5 h-5 transition-all duration-200 shrink-0 ${isActive
+                      ? "text-white"
+                      : "text-white/60 group-hover:text-white group-hover:scale-110 group-hover:drop-shadow-[0_0_3px_rgba(255,255,255,0.4)]"
+                      }`}
                   />
                   <span
                     className={`text-sm font-medium transition-all duration-300 ${isMinimized && isDesktop ? "lg:hidden" : ""}`}
@@ -320,11 +322,25 @@ export function Sidebar({
                 {user?.name || "Guest User"}
               </p>
               <p className="text-xs text-white/60 mt-0.5 flex items-center gap-1.5 whitespace-nowrap">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-sm shadow-green-400/50"></span>
                 {isRecruiter ? "Recruiter" : "Job Seeker"}
               </p>
             </div>
           </div>
+
+          {/* Home (Marketing Page) */}
+          <button
+            onClick={() => handleNavigation("/")}
+            className={`flex items-center gap-3 rounded-xl text-white/60 hover:bg-white/10 hover:text-white transition-all duration-300 group border border-transparent 
+                ${isMinimized && isDesktop ? "lg:w-11 lg:h-11 lg:p-0 lg:justify-center mx-auto" : "w-full px-3 py-2.5"}`}
+            title={isMinimized && isDesktop ? "Home" : ""}
+          >
+            <Home className="w-5 h-5 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-200 shrink-0" />
+            <span
+              className={`text-sm font-medium ${isMinimized && isDesktop ? "lg:hidden" : ""}`}
+            >
+              Home Page
+            </span>
+          </button>
 
           {/* Notifications */}
           <button
@@ -334,7 +350,7 @@ export function Sidebar({
             title={isMinimized && isDesktop ? "Notifications" : ""}
           >
             <div className="relative flex items-center justify-center">
-              <Bell className="w-5 h-5 text-white/60 group-hover:text-white transition-colors shrink-0" />
+              <Bell className="w-5 h-5 text-white/60 group-hover:text-white group-hover:scale-110 transition-all duration-200 shrink-0" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm">
                   {unreadCount > 9 ? "9+" : unreadCount}
@@ -345,6 +361,7 @@ export function Sidebar({
               <span className="text-sm font-medium">Notifications</span>
             </div>
           </button>
+
 
           {/* Dark Mode Toggle */}
           <button
@@ -361,7 +378,7 @@ export function Sidebar({
           >
             {darkMode ? (
               <>
-                <Sun className="w-5 h-5 text-yellow-300 group-hover:rotate-12 transition-transform shrink-0" />
+                <Sun className="w-5 h-5 text-yellow-300 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-200 shrink-0" />
                 <span
                   className={`text-sm font-medium ${isMinimized && isDesktop ? "lg:hidden" : ""}`}
                 >
@@ -370,7 +387,7 @@ export function Sidebar({
               </>
             ) : (
               <>
-                <Moon className="w-5 h-5 text-white/60 group-hover:-rotate-12 transition-transform shrink-0" />
+                <Moon className="w-5 h-5 text-white/60 group-hover:-rotate-12 group-hover:scale-110 transition-transform duration-200 shrink-0" />
                 <span
                   className={`text-sm font-medium ${isMinimized && isDesktop ? "lg:hidden" : ""}`}
                 >
@@ -380,20 +397,7 @@ export function Sidebar({
             )}
           </button>
 
-          {/* Home (Marketing Page) */}
-          <button
-            onClick={() => handleNavigation("/")}
-            className={`flex items-center gap-3 rounded-xl text-white/60 hover:bg-white/10 hover:text-white transition-all duration-300 group border border-transparent 
-              ${isMinimized && isDesktop ? "lg:w-11 lg:h-11 lg:p-0 lg:justify-center mx-auto" : "w-full px-3 py-2.5"}`}
-            title={isMinimized && isDesktop ? "Home" : ""}
-          >
-            <Home className="w-5 h-5 text-white/60 group-hover:text-white transition-colors shrink-0" />
-            <span
-              className={`text-sm font-medium ${isMinimized && isDesktop ? "lg:hidden" : ""}`}
-            >
-              Home
-            </span>
-          </button>
+
 
           {/* Logout */}
           <div className="pt-2">
@@ -403,7 +407,7 @@ export function Sidebar({
                 ${isMinimized && isDesktop ? "lg:w-11 lg:h-11 lg:p-0 lg:justify-center mx-auto" : "w-full px-3 py-2.5"}`}
               title={isMinimized && isDesktop ? "Sign Out" : ""}
             >
-              <LogOut className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform shrink-0" />
+              <LogOut className="w-5 h-5 group-hover:-translate-x-0.5 group-hover:scale-105 transition-transform duration-200 shrink-0" />
               <span
                 className={`text-sm font-medium ${isMinimized && isDesktop ? "lg:hidden" : ""}`}
               >

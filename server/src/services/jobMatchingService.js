@@ -51,8 +51,7 @@ let aiAvailable = true;
 let lastQuotaErrorTime = 0;
 const QUOTA_COOLDOWN_MS = 60 * 1000; // 1 minute cooldown
 
-// AI-powered job matching with Gemini
-export const getAIMatchAnalysis = async (userResume, job) => {
+export const getAIMatchAnalysis = async (userResume, job, retries = 2) => {
   // Check if we're in cooldown period after quota error
   if (!aiAvailable && Date.now() - lastQuotaErrorTime < QUOTA_COOLDOWN_MS) {
     console.log("AI temporarily unavailable, using fallback calculation");
@@ -60,7 +59,7 @@ export const getAIMatchAnalysis = async (userResume, job) => {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
       You are an AI career matching expert. Analyze this candidate and job posting.
@@ -92,8 +91,8 @@ export const getAIMatchAnalysis = async (userResume, job) => {
       model.generateContent(prompt),
       new Promise((_, reject) =>
         setTimeout(
-          () => reject(new Error("AI request timed out after 10s")),
-          10000,
+          () => reject(new Error("AI request timed out after 45s")),
+          45000,
         ),
       ),
     ]);
@@ -109,6 +108,14 @@ export const getAIMatchAnalysis = async (userResume, job) => {
     return analysis;
   } catch (error) {
     console.error("AI match analysis error:", error.message);
+
+    // If it's a 503 or 500 error, retry up to `retries` times
+    if (retries > 0 && (error.message?.includes("503") || error.message?.includes("500") || error.message?.includes("timed out"))) {
+      console.log(`Retrying AI analysis... (${retries} retries left)`);
+      // Wait for 2 seconds before retrying to let traffic settle
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      return getAIMatchAnalysis(userResume, job, retries - 1);
+    }
 
     // Check if it's a quota error (429)
     if (

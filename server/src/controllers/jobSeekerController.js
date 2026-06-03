@@ -23,6 +23,7 @@ export const getProfile = async (req, res) => {
         avatar: user.avatar || "",
         phone: user.phone || "",
         location: user.location || "",
+        profession: user.profession || "",
         bio: user.bio || "",
         currentRole: user.currentRole || "",
         experience: user.experience || "",
@@ -52,6 +53,7 @@ export const updateProfile = async (req, res) => {
       "phone",
       "location",
       "bio",
+      "profession",
       "currentRole",
       "experience",
       "skills",
@@ -78,6 +80,8 @@ export const updateProfile = async (req, res) => {
       updatedData.phone.trim() !== "" &&
       updatedData.location &&
       updatedData.location.trim() !== "" &&
+      updatedData.profession &&
+      updatedData.profession.trim() !== "" &&
       updatedData.currentRole &&
       updatedData.currentRole.trim() !== "" &&
       updatedData.experience &&
@@ -107,6 +111,7 @@ export const updateProfile = async (req, res) => {
         avatar: user.avatar || "",
         phone: user.phone || "",
         location: user.location || "",
+        profession: user.profession || "",
         bio: user.bio || "",
         currentRole: user.currentRole || "",
         experience: user.experience || "",

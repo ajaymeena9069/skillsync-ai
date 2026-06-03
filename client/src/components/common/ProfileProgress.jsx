@@ -105,6 +105,12 @@ export function ProfileProgress({ user }) {
         path: "/app/profile",
       },
       {
+        name: "Profession",
+        value: user?.profession,
+        icon: Briefcase,
+        path: "/app/profile",
+      },
+      {
         name: "Current Role",
         value: user?.currentRole,
         icon: Briefcase,

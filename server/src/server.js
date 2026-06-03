@@ -2,7 +2,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express from "express";
-import mongoose from "mongoose";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -10,17 +9,18 @@ import cookieParser from "cookie-parser";
 import http from "http";
 import { initSocket } from "./sockets/socketHandler.js";
 import "./config/cloudinary.js";
+import connectDB from "./config/db.js";
 
 // Import routes
 import authRoutes from "./routes/authRoutes.js";
-import jobSeekerRoutes from "./routes/jobSeekerRoutes.js"; // ✅ Job Seeker routes (replaces userRoutes)
+import jobSeekerRoutes from "./routes/jobSeekerRoutes.js"; 
 import resumeRoutes from "./routes/resumeRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
 import recruiterRoutes from "./routes/recruiterRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
 import matchRoutes from "./routes/matchRoutes.js";
-import commonRoutes from "./routes/commonRoutes.js"; // ✅ Common routes (avatar upload for both roles)
+import commonRoutes from "./routes/commonRoutes.js"; 
 import aiRoutes from "./routes/aiRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import testimonialRoutes from "./routes/testimonialRoutes.js";
@@ -63,17 +63,10 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", message: "Server is running" });
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ success: false, message: "Something went wrong!" });
-});
+
 
 // Database connection
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+connectDB();
 
 // Start server
 const PORT = process.env.PORT || 5000;

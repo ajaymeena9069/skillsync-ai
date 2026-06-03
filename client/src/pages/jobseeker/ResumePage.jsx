@@ -486,7 +486,7 @@ export function ResumePage() {
                   <div className="space-y-2">
                     <Button
                       variant="outline"
-                      className="w-full justify-start gap-2 text-gray-900 dark:text-white"
+                      className="w-full justify-start gap-2"
                       onClick={() => navigate("/app/jobs")}
                     >
                       <Briefcase className="w-4 h-4" /> Find Matching Jobs

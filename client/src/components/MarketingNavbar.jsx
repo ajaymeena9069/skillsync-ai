@@ -5,6 +5,7 @@ import { Sparkles, Menu, X, Moon, Sun, LayoutDashboard, LogOut, ChevronDown } fr
 import { Button } from "./Button";
 import { logout } from "../features/auth/authSlice";
 import { OptimizedAvatar } from "./common/OptimizedAvatar";
+import { ConfirmationModal } from "./common/ConfirmationModal";
 
 export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
   const dispatch = useDispatch();
@@ -13,6 +14,7 @@ export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -30,9 +32,14 @@ export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
     localStorage.setItem("darkMode", newDarkMode);
   };
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutConfirm = () => {
     dispatch(logout());
     navigate("/");
+    setShowLogoutConfirm(false);
     if (onGetStarted) onGetStarted();
   };
 
@@ -44,6 +51,7 @@ export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
     { id: "home", label: "Home" },
     { id: "features", label: "Features" },
     { id: "about", label: "About" },
+    { id: "testimonials", label: "Feedback" },
     { id: "contact", label: "Contact" },
   ];
 
@@ -137,7 +145,6 @@ export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
                       {user.name}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1.5 whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-sm shadow-green-400/50"></span>
                       {user.role === 'recruiter' ? 'Recruiter' : 'Job Seeker'}
                     </p>
                   </div>
@@ -179,7 +186,7 @@ export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
                       </button>
                       <button
                         onClick={() => {
-                          handleLogout();
+                          handleLogoutClick();
                           setDropdownOpen(false);
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
@@ -200,7 +207,7 @@ export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
                 >
                   Log In
                 </Button>
-                <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all">
+                <Button onClick={onGetStarted} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all">
                   Get Started
                 </Button>
               </>
@@ -283,7 +290,7 @@ export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      handleLogout();
+                      handleLogoutClick();
                       setMenuOpen(false);
                     }}
                     className="w-full justify-center gap-2 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800/50 dark:text-red-400 dark:hover:bg-red-900/20"
@@ -310,6 +317,14 @@ export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
           </div>
         )}
       </div>
+
+      <ConfirmationModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Sign Out"
+        message="Are you sure you want to sign out of your account?"
+      />
     </nav>
   );
 }

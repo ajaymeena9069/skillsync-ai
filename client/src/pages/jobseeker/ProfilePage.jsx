@@ -58,6 +58,7 @@ export function ProfilePage() {
     email: "",
     phone: "",
     location: "",
+    profession: "",
     currentRole: "",
     experience: "",
     preferredJobType: "full-time",
@@ -80,6 +81,7 @@ export function ProfilePage() {
         email: userData.email || "",
         phone: userData.phone || "",
         location: userData.location || "",
+        profession: userData.profession || "",
         currentRole: userData.currentRole || "",
         experience: userData.experience || "",
         preferredJobType: userData.preferredJobType || "full-time",
@@ -194,6 +196,7 @@ export function ProfilePage() {
         name: formData.name,
         phone: formData.phone,
         location: formData.location,
+        profession: formData.profession,
         currentRole: formData.currentRole,
         experience: formData.experience,
         bio: formData.bio,
@@ -218,6 +221,7 @@ export function ProfilePage() {
           name: formData.name,
           phone: formData.phone,
           location: formData.location,
+          profession: formData.profession,
           currentRole: formData.currentRole,
           experience: formData.experience,
           bio: formData.bio,
@@ -257,6 +261,7 @@ export function ProfilePage() {
         email: userData.email || "",
         phone: userData.phone || "",
         location: userData.location || "",
+        profession: userData.profession || "",
         currentRole: userData.currentRole || "",
         experience: userData.experience || "",
         preferredJobType: userData.preferredJobType || "full-time",
@@ -280,11 +285,12 @@ export function ProfilePage() {
 
   const calculateProfileCompleteness = () => {
     let filled = 0;
-    const total = 8;
+    const total = 9;
     if (reduxUser?.name && reduxUser.name.trim()) filled++;
     if (reduxUser?.email && reduxUser.email.trim()) filled++;
     if (reduxUser?.phone && reduxUser.phone.trim()) filled++;
     if (reduxUser?.location && reduxUser.location.trim()) filled++;
+    if (reduxUser?.profession && reduxUser.profession.trim()) filled++;
     if (reduxUser?.currentRole && reduxUser.currentRole.trim()) filled++;
     if (
       reduxUser?.experience &&
@@ -571,6 +577,23 @@ export function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
+                      Profession
+                    </label>
+                    {isEditing ? (
+                      <Input
+                        name="profession"
+                        value={formData.profession}
+                        onChange={handleInputChange}
+                        placeholder="e.g., Software Engineer"
+                      />
+                    ) : (
+                      <p className="text-gray-900 dark:text-white">
+                        {formData.profession || "Not set"}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">
                       Job Title
                     </label>
                     {isEditing ? (
@@ -578,7 +601,7 @@ export function ProfilePage() {
                         name="currentRole"
                         value={formData.currentRole}
                         onChange={handleInputChange}
-                        placeholder="e.g., Software Engineer"
+                        placeholder="e.g., Senior Full Stack Dev"
                       />
                     ) : (
                       <p className="text-gray-900 dark:text-white">

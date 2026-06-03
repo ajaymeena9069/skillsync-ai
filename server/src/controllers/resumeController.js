@@ -24,6 +24,19 @@ export const uploadResume = async (req, res) => {
     }
 
     const userId = req.user._id;
+    
+    // Check rate limit
+    const user = await User.findById(userId).select("aiUsage isDeveloper");
+    const now = new Date();
+    const lastParsed = user?.aiUsage?.resumeParse?.lastParsedAt;
+
+    if (!user?.isDeveloper && lastParsed && (now - lastParsed) < 24 * 60 * 60 * 1000) {
+      return res.status(429).json({
+        success: false,
+        message: "You have reached your daily limit for AI resume parsing. Please try again tomorrow.",
+      });
+    }
+
     const file = req.file;
 
     console.log("📄 File received:", {
@@ -167,6 +180,7 @@ export const uploadResume = async (req, res) => {
           education: parsedData.education || [],
           projects: parsedData.projects || [],
         },
+        "aiUsage.resumeParse.lastParsedAt": now,
       },
       { new: true },
     ).select("-password");

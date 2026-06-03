@@ -40,6 +40,10 @@ const applicationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    aiAnalysis: {
+      data: { type: mongoose.Schema.Types.Mixed, default: null },
+      generatedAt: { type: Date, default: null },
+    },
   },
   {
     timestamps: true,

@@ -33,7 +33,7 @@ const jobSchema = new mongoose.Schema(
     },
     experienceLevel: {
       type: String,
-      enum: ["entry", "mid", "senior", "lead"],
+      enum: ["entry", "junior", "mid", "senior", "lead", "executive"],
       required: true,
     },
     salaryMin: {
@@ -97,6 +97,10 @@ const jobSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    viewedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    }],
     postedAt: {
       type: Date,
       default: Date.now,

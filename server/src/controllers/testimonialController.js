@@ -8,7 +8,7 @@ export const submitTestimonial = async (req, res) => {
     const { content, rating } = req.body;
     const userId = req.user._id;
     const role = req.user.role;
-
+    
     if (!content || !rating) {
       return res.status(400).json({
         success: false,
@@ -51,7 +51,7 @@ export const getPublicTestimonials = async (req, res) => {
   try {
     // Get top 3 approved testimonials with 5-star rating
     const testimonials = await Testimonial.find({ isApproved: true, rating: 5 })
-      .populate("userId", "name avatar role")
+      .populate("userId", "name avatar role profession currentRole company")
       .sort({ createdAt: -1 })
       .limit(3);
 
@@ -61,7 +61,7 @@ export const getPublicTestimonials = async (req, res) => {
         isApproved: true,
         rating: 4,
       })
-        .populate("userId", "name avatar role")
+        .populate("userId", "name avatar role profession currentRole company")
         .sort({ createdAt: -1 })
         .limit(3 - testimonials.length);
       testimonials.push(...moreTestimonials);
@@ -69,8 +69,13 @@ export const getPublicTestimonials = async (req, res) => {
 
     // Format for frontend
     const formattedTestimonials = testimonials.map((t) => {
-      // Create a default job title/role text
-      let roleText = t.role === "recruiter" ? "Tech Recruiter" : "Software Engineer";
+      // Create a dynamic job title/role text based on user profile
+      let roleText = "User";
+      if (t.role === "recruiter") {
+        roleText = t.userId?.company?.name ? `Recruiter at ${t.userId.company.name}` : "Recruiter";
+      } else {
+        roleText = t.userId?.profession || t.userId?.currentRole || "Job Seeker";
+      }
       
       return {
         _id: t._id,
@@ -79,6 +84,43 @@ export const getPublicTestimonials = async (req, res) => {
         avatar: t.userId?.avatar || (t.role === "recruiter" ? "👨‍💼" : "👨‍💻"),
         content: t.content,
         rating: t.rating,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: formattedTestimonials,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get all public testimonials
+// @route   GET /api/testimonials/public/all
+// @access  Public
+export const getAllPublicTestimonials = async (req, res) => {
+  try {
+    const testimonials = await Testimonial.find({ isApproved: true })
+      .populate("userId", "name avatar role profession currentRole company")
+      .sort({ createdAt: -1 });
+
+    const formattedTestimonials = testimonials.map((t) => {
+      let roleText = "User";
+      if (t.role === "recruiter") {
+        roleText = t.userId?.company?.name ? `Recruiter at ${t.userId.company.name}` : "Recruiter";
+      } else {
+        roleText = t.userId?.profession || t.userId?.currentRole || "Job Seeker";
+      }
+      
+      return {
+        _id: t._id,
+        name: t.userId?.name || "Anonymous User",
+        role: roleText,
+        avatar: t.userId?.avatar || (t.role === "recruiter" ? "👨‍💼" : "👨‍💻"),
+        content: t.content,
+        rating: t.rating,
+        createdAt: t.createdAt,
       };
     });
 

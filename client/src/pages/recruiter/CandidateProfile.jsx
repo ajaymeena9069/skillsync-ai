@@ -69,8 +69,9 @@ const getStatusConfig = (status) => {
 };
 
 export function CandidateProfile() {
-  const navigate = useNavigate();
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [showFullCoverLetter, setShowFullCoverLetter] = useState(false);
   const [notes, setNotes] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingStatus, setPendingStatus] = useState(null);
@@ -272,9 +273,17 @@ export function CandidateProfile() {
                     <MessageSquare className="w-5 h-5 text-purple-500" />
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Cover Letter</h2>
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                  <p className={`text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap ${!showFullCoverLetter ? 'line-clamp-4' : ''}`}>
                     {application.coverLetter}
                   </p>
+                  {application.coverLetter.length > 200 && (
+                    <button
+                      onClick={() => setShowFullCoverLetter(!showFullCoverLetter)}
+                      className="mt-3 px-4 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-900/50 dark:hover:bg-purple-900/70 dark:text-purple-300 text-sm font-semibold rounded-full transition-all duration-200 focus:outline-none shadow-sm inline-block"
+                    >
+                      {showFullCoverLetter ? "View Less" : "View More"}
+                    </button>
+                  )}
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
                     Applied on {formatDate(application.createdAt)}
                   </p>

@@ -26,8 +26,16 @@ const userSchema = new mongoose.Schema(
       enum: ["jobseeker", "recruiter"],
       default: "jobseeker",
     },
+    isDeveloper: {
+      type: Boolean,
+      default: false,
+    },
 
     // ========== CANDIDATE SPECIFIC FIELDS ==========
+    profession: {
+      type: String,
+      default: "",
+    },
     location: {
       type: String,
       default: "",
@@ -91,6 +99,19 @@ const userSchema = new mongoose.Schema(
     },
 
     // ========== COMMON FIELDS ==========
+    aiUsage: {
+      roadmap: {
+        lastGeneratedAt: { type: Date, default: null },
+        cachedData: { type: mongoose.Schema.Types.Mixed, default: null },
+      },
+      skillGap: {
+        lastAnalyzedAt: { type: Date, default: null },
+        cachedData: { type: mongoose.Schema.Types.Mixed, default: null },
+      },
+      resumeParse: {
+        lastParsedAt: { type: Date, default: null },
+      },
+    },
     avatar: {
       type: String,
       default: "",
@@ -163,8 +184,9 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-// Indexes for better performance
+// Index for better performance (email index is auto-created by unique:true)
 userSchema.index({ role: 1 });
-userSchema.index({ email: 1 });
+userSchema.index({ "skills": 1 });
+userSchema.index({ createdAt: -1 });
 
 export default mongoose.model("User", userSchema);
