@@ -58,10 +58,10 @@ export const sendVerificationEmail = async (email, name, verificationCode) => {
                   <h1 class="logo-text">SkillSync AI</h1>
                 </div>
                 <div class="content">
-                  <h2 class="greeting">Hello \${name},</h2>
+                  <h2 class="greeting">Hello ${name},</h2>
                   <p class="message">Welcome to SkillSync AI! To complete your registration and secure your account, please verify your email address using the code below.</p>
                   <div class="code-box">
-                    <p class="code">\${verificationCode}</p>
+                    <p class="code">${verificationCode}</p>
                   </div>
                   <p class="message" style="font-size: 14px; margin-bottom: 0;">This verification code will expire in <strong>10 minutes</strong>.</p>
                 </div>
@@ -74,7 +74,7 @@ export const sendVerificationEmail = async (email, name, verificationCode) => {
           </body>
           </html>
         `,
-        textContent: `Welcome to SkillSync AI!\n\nYour verification code is: \${verificationCode}\n\nThis code will expire in 10 minutes.\n\nIf you didn't create an account, please ignore this email.`,
+        textContent: `Welcome to SkillSync AI!\n\nYour verification code is: ${verificationCode}\n\nThis code will expire in 10 minutes.\n\nIf you didn't create an account, please ignore this email.`,
       }),
     });
 
@@ -147,9 +147,9 @@ export const sendPasswordResetEmail = async (email, name, resetToken) => {
                 </div>
                 <div class="content">
                   <h2 class="greeting">Password Reset Request</h2>
-                  <p class="message">Hello \${name},<br>We received a request to reset the password associated with your SkillSync AI account. You can securely reset it by clicking the button below.</p>
+                  <p class="message">Hello ${name},<br>We received a request to reset the password associated with your SkillSync AI account. You can securely reset it by clicking the button below.</p>
                   <div class="btn-container">
-                    <a href="\${resetUrl}" class="button">Reset My Password</a>
+                    <a href="${resetUrl}" class="button">Reset My Password</a>
                   </div>
                   <p class="message" style="font-size: 14px; margin-bottom: 0;">This secure link will expire in <strong>1 hour</strong>.</p>
                 </div>
@@ -162,7 +162,7 @@ export const sendPasswordResetEmail = async (email, name, resetToken) => {
           </body>
           </html>
         `,
-        textContent: `Reset Your Password for SkillSync AI\n\nClick this link to reset your password: \${resetUrl}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, please ignore this email.`,
+        textContent: `Reset Your Password for SkillSync AI\n\nClick this link to reset your password: ${resetUrl}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, please ignore this email.`,
       }),
     });
 
@@ -236,7 +236,7 @@ export const sendWelcomeEmail = async (email, name) => {
                   <h1 class="logo-text">SkillSync AI</h1>
                 </div>
                 <div class="content">
-                  <h2 class="greeting">Welcome aboard, \${name}! 🚀</h2>
+                  <h2 class="greeting">Welcome aboard, ${name}! 🚀</h2>
                   <p class="message">Your email has been successfully verified. We are thrilled to have you join the future of AI-powered career growth.</p>
                   
                   <div class="feature-list">
@@ -260,7 +260,7 @@ export const sendWelcomeEmail = async (email, name) => {
                   </div>
 
                   <div class="btn-container">
-                    <a href="\${process.env.FRONTEND_URL}/login" class="button">Access Your Dashboard</a>
+                    <a href="${process.env.FRONTEND_URL}/login" class="button">Access Your Dashboard</a>
                   </div>
                 </div>
                 <div class="footer">
@@ -271,7 +271,7 @@ export const sendWelcomeEmail = async (email, name) => {
           </body>
           </html>
         `,
-        textContent: `Welcome to SkillSync AI, \${name}!\n\nYour email has been verified successfully.\n\nGet started at: \${process.env.FRONTEND_URL}`,
+        textContent: `Welcome to SkillSync AI, ${name}!\n\nYour email has been verified successfully.\n\nGet started at: ${process.env.FRONTEND_URL}`,
       }),
     });
 
