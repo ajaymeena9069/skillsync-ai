@@ -12,13 +12,18 @@ export function MarketingNavbar({ currentPage, onNavigate, onGetStarted }) {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return document.documentElement.classList.contains("dark") || localStorage.getItem("darkMode") === "true";
+    }
+    return false;
+  });
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    setDarkMode(document.documentElement.classList.contains("dark"));
+    setDarkMode(document.documentElement.classList.contains("dark") || localStorage.getItem("darkMode") === "true");
   }, []);
 
   const toggleDarkMode = () => {

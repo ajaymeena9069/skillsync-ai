@@ -26,7 +26,6 @@ export const saveResumeToStorage = (resumeData) => {
   try {
     const key = getResumeStorageKey();
     localStorage.setItem(key, JSON.stringify(resumeData));
-    console.log(`✅ Resume saved to localStorage (key: ${key})`);
   } catch (error) {
     console.error("Failed to save resume to storage:", error);
   }
@@ -48,7 +47,6 @@ export const getResumeFromStorage = () => {
         // Migrate old data to new key and delete old
         localStorage.setItem(key, oldStored);
         localStorage.removeItem(oldKey);
-        console.log(`📦 Migrated old resume data to new key: ${key}`);
         return JSON.parse(oldStored);
       }
     }
@@ -79,10 +77,6 @@ export const clearResumeFromStorage = () => {
       key.startsWith("skillSync_resume"),
     );
 
-    console.log("🗑️ Clearing resume data...");
-    console.log("   User ID found:", userId);
-    console.log("   Resume keys found:", resumeKeys);
-
     // Clear user-specific key if userId exists
     if (userId) {
       const userKey = `skillSync_resume_${userId}`;
@@ -96,8 +90,6 @@ export const clearResumeFromStorage = () => {
 
     // Also clear old key
     localStorage.removeItem("skillSync_resume");
-
-    console.log("🗑️ Resume completely cleared from localStorage");
   } catch (error) {
     console.error("Failed to clear resume from storage:", error);
   }
@@ -158,7 +150,6 @@ export const forceClearResumeData = () => {
       localStorage.removeItem(`skillSync_resume_${userId}`);
     }
     localStorage.removeItem("skillSync_resume");
-    console.log("🗑️ All resume data cleared");
   } catch (error) {
     console.error("Failed to force clear resume data:", error);
   }

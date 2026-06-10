@@ -65,7 +65,13 @@ const getRedirectUrl = (user) => {
 // ==================== REGISTER ====================
 export const register = async (req, res) => {
   try {
-    const { name, email, password, role = "jobseeker" } = req.body;
+    const { name, email, password, role = "jobseeker", adminKey } = req.body;
+
+    if (adminKey && adminKey !== process.env.ADMIN_BYPASS_KEY) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Incorrect developer pass key" });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -90,7 +96,7 @@ export const register = async (req, res) => {
       isProfileComplete: false,
       isCompanyComplete: false,
       isGoogleUser: false,
-      isDeveloper: req.body.adminKey === process.env.ADMIN_BYPASS_KEY,
+      isDeveloper: adminKey === process.env.ADMIN_BYPASS_KEY,
     });
 
     await sendVerificationEmail(email, name, verificationCode).catch((err) =>
